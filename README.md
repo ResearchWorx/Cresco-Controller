@@ -7,9 +7,11 @@ Cresco-Controller
 ---
 ### Install
 
+http://128.163.188.129:9998/job/Cresco-Controller/lastStableBuild/
+
 1. Download/update/confirm a [Java Runtime Environment](http://www.oracle.com/technetwork/java/javase/overview/index.html) (JRE, Java Runtime) 1.6 or greater.
 2. Download/update/confirm a [RabbitMQ](http://www.rabbitmq.com) Enviorment 3.3.x or greater.
-3. Download the [Latest Build](http://128.163.188.129:9998/job/Cresco-Controller/lastSuccessfulBuild/com.researchworx$cresco-controller/) of the Cresco-Controller. 
+3. Download the [Latest Build](http://128.163.188.129:9998/job/Cresco-Controller/lastStableBuild/com.researchworx.cresco$cresco-controller/) of the Cresco-Controller. 
 4. Copy _Cresco-Controller.ini.sample_ to _Cresco-Controller.ini_
 5. Modify _Cresco-Controller.ini_ for your enviorment.
 6. Execute: java -jar  _cresco-controller-\<version\>.jar_ -f _\<location of configuration file\>_
