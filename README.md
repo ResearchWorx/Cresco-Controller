@@ -1,4 +1,4 @@
-Cresco-Controller (**Deprecated**: Use Cresco-Agent-Controller-Plugin)
+Cresco-Controller
 =========================
 
 ### Status
