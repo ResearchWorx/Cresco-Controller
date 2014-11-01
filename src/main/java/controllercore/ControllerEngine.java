@@ -1,24 +1,26 @@
-package devneo;
+package controllercore;
 
-import graphdb.graphDBEngine;
+import graphdb.GraphDBEngine;
+import httpserv.httpServerEngine;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.rest.graphdb.RestGraphDatabase;
 
-import devneo.PeerDiscovery.Peer;
+import controllercore.PeerDiscovery.Peer;
 
-public class neo {
-public static GraphDatabaseService graphDb;
+public class ControllerEngine {
+
+	public static CommandExec commandExec;
+	public static GraphDBEngine gdb;
 	
 	public static void main(String[] args) throws Exception 
-	    {
+	{
+		commandExec = new CommandExec(); //create command channel
 		
-		graphDBEngine gdb = new graphDBEngine();
+		gdb = new GraphDBEngine(); //create graphdb connector
 		
-		//gdb.addNode("regionName", "agentName", "pluginName");
+		/*
 		gdb.addNode("regionName", null,null);
 		gdb.addNode("regionName", "agentName",null);
 		gdb.addNode("regionName", "agentName","pluginName");
@@ -26,16 +28,22 @@ public static GraphDatabaseService graphDb;
 		
 		gdb.addNode("regionName", "agentName2",null);
 		gdb.addNode("regionName", "agentName","pluginName");
+		*/
 		
-		
-		//GraphDatabaseService gds = new RestGraphDatabase("http://localhost:7474/db/data");
-		//GraphDatabaseService gds = new RestGraphDatabase("http://localhost:7474/db/data",username,password);
-		
-		
-		
-		//gdb.theBoom();
-		
-	    }	
+		try
+    	{
+    		System.out.println("Starting HTTP Service");
+			httpServerEngine httpEngine = new httpServerEngine();
+			Thread httpServerThread = new Thread(httpEngine);
+	    	httpServerThread.start();		    
+    	}
+    	catch(Exception ex)
+    	{
+    		System.out.println("Unable to Start HTTP Service : " + ex.toString());
+    	}
+			
+	}	
+	
 	public static void discover()
 	{
 	  try

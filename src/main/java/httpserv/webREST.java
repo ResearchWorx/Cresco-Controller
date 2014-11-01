@@ -16,6 +16,8 @@ import shared.MsgEventType;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import controllercore.ControllerEngine;
  
 @Path("/API")
 public class webREST {
@@ -70,39 +72,34 @@ public class webREST {
 	    		return Response.status(Response.Status.BAD_REQUEST).entity("bad request").build();
 	    	}
 	    	
-	    	
-	    	//me.setMsgType(MsgEventType.DISCOVER);
-	   		//me.setMsgBody("Request Discovery");
-	    	System.out.println(me.getParamsString());
-	    	System.out.println(me.getMsgType().toString());
 	    	/*
-	    	String restid = PluginEngine.restConsumer.call(me); //send discovery message
+	    	System.out.println("Controller : webREST : Incoming");
+   		    System.out.println("MsgType=" + me.getMsgType().toString());
+			System.out.println("Region=" + me.getMsgRegion() + " Agent=" + me.getMsgAgent() + " plugin=" + me.getMsgPlugin());
+			System.out.println("params=" + me.getParamsString());
+			*/
 	    	
-	    	if(restid == null)
+	    	try
+	    	{
+	    		MsgEvent ce = ControllerEngine.commandExec.cmdExec(me);
+	    		String returnString = null;
+				
+	    		if(ce != null)
+	    		{
+	    			Gson gson = new Gson();
+					returnString = gson.toJson(ce);
+	    		}
+	    		else
+	    		{
+	    			returnString = "ok";
+	    		}
+	    		return Response.ok(returnString, MediaType.TEXT_HTML_TYPE).build();
+			}
+	    	catch(Exception ex)
 	    	{
 	    		return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal Server Error").build();
+		    		
 	    	}
-	    	
-	    	MsgEvent ce = null;
-	    	int count = 0;
-	    	int timeout = 10*20; //(10=1sec) * (20 sec)
-	    	while((!PluginEngine.replyRESTmap.containsKey(restid)) && (count < timeout))
-	    	{
-	    		Thread.sleep(100);
-	    		count++;
-	    	}
-	    	
-	    	if(PluginEngine.replyRESTmap.containsKey(restid))
-	    	{
-	    		ce = PluginEngine.replyRESTmap.get(restid);
-	    	}
-	    	
-	    	Gson gson = new Gson();
-			String returnString = gson.toJson(ce);
-			*/
-	    	String returnString = "theboom";
-			return Response.ok(returnString, MediaType.TEXT_HTML_TYPE).build();
-			
 	    }
 		catch(Exception ex)
 		{
