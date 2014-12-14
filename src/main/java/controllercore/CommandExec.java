@@ -1,5 +1,6 @@
 package controllercore;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import shared.MsgEvent;
@@ -166,7 +167,35 @@ public class CommandExec {
 				}
 				
 			}
-	
+			else if(ce.getMsgType() == MsgEventType.WATCHDOG)
+			{
+				String region = null;
+				String agent = null;
+				String plugin = null;
+				String application = null;
+				
+				region = ce.getParam("src_region");
+				agent = ce.getParam("src_agent");
+				plugin = ce.getParam("src_plugin");
+				application = ce.getParam("application");
+				//clean params for edge
+				/*
+				ce.removeParam("loop");
+				ce.removeParam("isGlobal");
+				ce.removeParam("src_agent");
+				ce.removeParam("src_region");
+				ce.removeParam("src_plugin");
+				ce.removeParam("dst_agent");
+				ce.removeParam("dst_region");
+				ce.removeParam("dst_plugin");
+				*/
+				Map<String,String> params = ce.getParams();
+				
+				ControllerEngine.gdb.updatePerf(region, agent, plugin, application, params);
+				
+				ce.setMsgBody("updatedperf");
+				return ce;
+			}
 		return null;
 	}
 	
