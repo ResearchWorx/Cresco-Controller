@@ -5,12 +5,16 @@ import httpserv.httpServerEngine;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-
+import shared.MsgEvent;
+import shared.MsgEventType;
 import controllercore.PeerDiscovery.Peer;
 
 public class ControllerEngine {
 
+	public static ConcurrentHashMap<String,ConcurrentLinkedQueue<MsgEvent>> regionalMsgMap;
 	public static CommandExec commandExec;
 	public static GraphDBEngine gdb;
 	
@@ -20,6 +24,7 @@ public class ControllerEngine {
 		
 		gdb = new GraphDBEngine(); //create graphdb connector
 		
+		regionalMsgMap = new ConcurrentHashMap<String,ConcurrentLinkedQueue<MsgEvent>>();
 		/*
 		gdb.addNode("regionName", null,null);
 		gdb.addNode("regionName", "agentName",null);
@@ -35,7 +40,21 @@ public class ControllerEngine {
     		System.out.println("Starting HTTP Service");
 			httpServerEngine httpEngine = new httpServerEngine();
 			Thread httpServerThread = new Thread(httpEngine);
-	    	httpServerThread.start();		    
+	    	httpServerThread.start();
+	    	
+	    	//
+	    	/*
+	    	System.out.println("adding msg for test2 and test3");
+	    	ConcurrentLinkedQueue<MsgEvent> cmq = new ConcurrentLinkedQueue<MsgEvent>();
+	    	MsgEvent me = new MsgEvent(MsgEventType.EXEC,"test2","controller2",null,"test message for test2");
+	    	me.setParam("src_region", "test2");
+			me.setParam("dst_region", "test2");
+			me.setParam("dst_agent", "controller2");
+			cmq.add(me);
+			regionalMsgMap.put("test2", cmq);
+	    	*/
+	    	//
+	    	
     	}
     	catch(Exception ex)
     	{

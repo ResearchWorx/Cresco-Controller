@@ -409,7 +409,7 @@ public class GraphDBEngine {
 			QueryResult<Map<String, Object>> result;
 			//ArrayList<Node> nodes = new ArrayList<Node>();
 			ArrayList<String> pluginNames = new ArrayList<String>();
-			
+			 			
 			try ( Transaction tx = graphDb.beginTx() )
 			{
 				//first remove plugins
@@ -420,10 +420,21 @@ public class GraphDBEngine {
 				 Iterator<Map<String, Object>> iterator=result.iterator(); 
 				 if(iterator.hasNext()) 
 				 { 
+					 for (Map<String,Object> row : result) 
+					 {
+						   Node x = (Node)row.get("b");
+						   //for (String prop : x.getPropertyKeys()) {
+						   //   System.out.println(prop +": "+x.getProperty(prop));
+						   //}
+						   pluginNames.add(x.getProperty("pluginname").toString());
+						   
+						}
+					/* 
 				   Map<String,Object> row= iterator.next(); 
-				   //out.print("Total nodes: " + row.get("total"));
 				   Node node  = (Node) row.get("b");
 				   pluginNames.add(node.getProperty("pluginname").toString());
+				   System.out.println("remove plugin2 " + region + " " + agent + " " + " " + node.getProperty("pluginname").toString());
+				   */				
 				 }
 				 tx.success();
 			}	
@@ -437,7 +448,45 @@ public class GraphDBEngine {
 			}
 			
 			long agentNodeId = getNodeId(region,agent,null);
-			deleteNodesAndRelationships(agentNodeId);			
+			deleteNodesAndRelationships(agentNodeId);
+			
+			//if no more nodes exist in region remove region
+			ArrayList<String> nodeNames = new ArrayList<String>();
+			
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+				//first remove agents
+				String execStr = "MATCH (r:Region {regionname: \"" + region + "\"})-[l]-(b:Agent) ";
+				execStr += "RETURN b";
+				result = engine.query( execStr,null );
+				Iterator<Map<String, Object>> iterator=result.iterator(); 
+				 if(iterator.hasNext()) { 
+				   Map<String,Object> row= iterator.next(); 
+				   //out.print("Total nodes: " + row.get("total"));
+				   Node node  = (Node) row.get("b");
+				   try{
+				   nodeNames.add(node.getProperty("agentname").toString());
+				   }
+				   catch(Exception ex)
+				   {
+					   System.out.println("WTF! " + ex.toString());
+				   }
+				 }
+			tx.success();
+			}
+			catch(Exception ex)
+			{
+				System.out.println("removeNode : removing Region " + ex.toString());
+			}
+			if(nodeNames.isEmpty())
+			{
+				removeNode(region,null,null);
+			}
+			else
+			{
+				System.out.println(nodeNames.size());
+			}
+			
 			
 		}
 		else if((region != null) && (agent != null) && (plugin != null)) //plugin node

@@ -1,5 +1,7 @@
 package controllercore;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import shared.MsgEvent;
 import shared.MsgEventType;
 
@@ -60,6 +62,37 @@ public class CommandExec {
 						ce.setMsgBody("nodeadded");
 						return ce;
 					}
+					else if(ce.getParam("controllercmd").equals("setparams"))
+					{
+						//add node
+						//ControllerEngine.gdb.addNode("regionName", "agentName",null);
+						String region = null;
+						String agent = null;
+						String plugin = null;
+						if((ce.getParam("src_region") != null) && (ce.getParam("src_agent") != null) && (ce.getParam("src_plugin") != null))
+						{
+							region = ce.getParam("src_region");
+							agent = ce.getParam("src_agent");
+							plugin = ce.getParam("src_plugin");
+							//add for plugin
+							//ControllerEngine.gdb.addNode(region, agent,plugin);
+							ControllerEngine.gdb.setNodeParam(region, agent, plugin, "configparams", ce.getParam("configparams"));
+						}
+						else if((ce.getParam("src_region") != null) && (ce.getParam("src_agent") != null) && (ce.getParam("src_plugin") == null))
+						{
+							region = ce.getParam("src_region");
+							agent = ce.getParam("src_agent");
+							//ControllerEngine.gdb.addNode(region, agent,null);
+							ControllerEngine.gdb.setNodeParam(region, agent, null, "configparams", ce.getParam("configparams"));
+							//add for agent
+							
+						}
+						
+						System.out.println("addNode region=" + region + " agent=" + agent + " plugin" + plugin);
+						
+						ce.setMsgBody("paramsadded");
+						return ce;
+					}
 					else if(ce.getParam("controllercmd").equals("removenode"))
 					{
 						String region = null;
@@ -84,6 +117,51 @@ public class CommandExec {
 						
 						ce.setMsgBody("noderemoved");
 						return ce;
+					}
+					else if(ce.getParam("controllercmd").equals("regioncmd"))
+					{
+							ce.removeParam("controllercmd");
+							if((ce.getParam("dst_region")  != null) && (ce.getParam("dst_agent")  != null) && (ce.getParam("configtype")  != null))
+							{
+								if(!ControllerEngine.regionalMsgMap.containsKey(ce.getParam("dst_region")))
+								{
+									ConcurrentLinkedQueue<MsgEvent> cmq = new ConcurrentLinkedQueue<MsgEvent>();
+									cmq.add(ce);
+									ControllerEngine.regionalMsgMap.put(ce.getParam("dst_region"), cmq);
+								}
+								else
+								{
+									ConcurrentLinkedQueue<MsgEvent> cmq = ControllerEngine.regionalMsgMap.get(ce.getParam("dst_region"));
+									cmq.add(ce);
+								}
+								System.out.println("External Message to: " + ce.getParam("dst_region") + " " + ce.getParam("dst_agent") + " " + ce.getParamsString());
+								System.out.println("Queue:" + ce.getParam("dst_region") + " has " + ControllerEngine.regionalMsgMap.get(ce.getParam("dst_region")).size() + " messages");
+							}
+						
+					}
+				}
+				
+			}
+			else if(ce.getMsgType() == MsgEventType.EXEC)
+			{
+				if(ce.getParam("cmd").equals("getmsg"))
+				{
+					try
+					{
+						String getRegion = ce.getParam("getregion");
+						//System.out.println("Get for Region: " + getRegion);
+						if(ControllerEngine.regionalMsgMap.containsKey(getRegion))
+						{
+							if(!ControllerEngine.regionalMsgMap.isEmpty())
+							{
+								//return if something is on the queue, else return null
+								return ControllerEngine.regionalMsgMap.get(getRegion).poll();
+							}
+						}
+					}
+					catch(Exception ex)
+					{
+						System.out.println("global controller msgexec " + ex.toString());
 					}
 				}
 				
