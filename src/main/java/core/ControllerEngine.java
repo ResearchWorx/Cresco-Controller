@@ -1,4 +1,4 @@
-package controllercore;
+package core;
 
 import graphdb.GraphDBEngine;
 import httpserv.httpServerEngine;
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import shared.MsgEvent;
 import shared.MsgEventType;
-import controllercore.PeerDiscovery.Peer;
+import core.PeerDiscovery.Peer;
 
 public class ControllerEngine {
 

@@ -96,7 +96,7 @@
   <configuration>
     <archive>
       <manifest>
-        <mainClass>core.AgentEngine</mainClass>
+        <mainClass>core.ControllerEngine</mainClass>
         <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
         <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>	
       </manifest>

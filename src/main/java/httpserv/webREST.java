@@ -17,7 +17,7 @@ import shared.MsgEventType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import controllercore.ControllerEngine;
+import core.ControllerEngine;
  
 @Path("/API")
 public class webREST {

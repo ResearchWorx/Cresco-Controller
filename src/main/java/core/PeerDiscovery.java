@@ -1,4 +1,4 @@
-package controllercore;
+package core;
 
 //package com.ryanm.util.net;
 
