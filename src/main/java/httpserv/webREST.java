@@ -72,7 +72,7 @@ public class webREST {
 	    		return Response.status(Response.Status.BAD_REQUEST).entity("bad request").build();
 	    	}
 	    	
-	    	
+	        
 	    	System.out.println("Controller : webREST : Incoming");
    		    System.out.println("MsgType=" + me.getMsgType().toString());
 			System.out.println("Region=" + me.getMsgRegion() + " Agent=" + me.getMsgAgent() + " plugin=" + me.getMsgPlugin());

@@ -53,20 +53,20 @@
   <dependency>
         <groupId>org.neo4j.app</groupId>
         <artifactId>neo4j-server</artifactId>
-        <version>2.1.5</version>
+        <version>2.1.7</version>
         
     </dependency>
     <dependency>
         <groupId>org.neo4j.app</groupId>
         <artifactId>neo4j-server</artifactId>
-        <version>2.1.5</version>
+        <version>2.1.7</version>
         <classifier>static-web</classifier>    
     </dependency>
     
     <dependency>
    <groupId>org.neo4j</groupId>
    <artifactId>neo4j</artifactId>
-   <version>2.1.5</version>
+   <version>2.1.7</version>
   </dependency>
   
   

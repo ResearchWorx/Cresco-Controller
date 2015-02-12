@@ -29,7 +29,8 @@ public class CommandExec {
 							String agent = null;
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
-							ControllerEngine.gdb.addNode(region, agent,null);								
+							ControllerEngine.gdb.addNode(region, agent,null);
+							System.out.println("registered Node region=" + region + " agent=" + agent);		
 							return ce;
 				    	}
 						else
@@ -89,7 +90,7 @@ public class CommandExec {
 							
 						}
 						
-						System.out.println("addNode region=" + region + " agent=" + agent + " plugin" + plugin);
+						System.out.println("setParams region=" + region + " agent=" + agent + " plugin" + plugin);
 						
 						ce.setMsgBody("paramsadded");
 						return ce;
