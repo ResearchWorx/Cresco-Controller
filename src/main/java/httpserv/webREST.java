@@ -73,13 +73,20 @@ public class webREST {
 	    	}
 	    	
 	        //getmsg
-	    	if(!me.getParam("cmd").equals("getmsg"))
+	    	if(me.getParam("cmd") != null)
 	    	{
-	    	System.out.println("Controller : webREST : Incoming");
-   		    System.out.println("MsgType=" + me.getMsgType().toString());
-			System.out.println("Region=" + me.getMsgRegion() + " Agent=" + me.getMsgAgent() + " plugin=" + me.getMsgPlugin());
-			System.out.println("params=" + me.getParamsString());
-			//CODY
+	    		if(!me.getParam("cmd").equals("getmsg"))
+	    		{
+	    		}
+	    		else
+	    		{
+	    			System.out.println("Controller : webREST : Incoming");
+		    		System.out.println("MsgType=" + me.getMsgType().toString());
+		    		System.out.println("Region=" + me.getMsgRegion() + " Agent=" + me.getMsgAgent() + " plugin=" + me.getMsgPlugin());
+		    		System.out.println("params=" + me.getParamsString());
+		    		//CODY
+		    			
+	    		}
 	    	}
 	    	try
 	    	{
