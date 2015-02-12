@@ -388,7 +388,7 @@ public class GraphDBEngine {
 			}
 			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
 			{
-				
+				long agentId = -1;
 				try ( Transaction tx = graphDb.beginTx() )
 				{
 					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })<-[:isAgent]-(Agent)";
@@ -403,10 +403,15 @@ public class GraphDBEngine {
 					   nodeCount++;
 					   nodeId = node.getId();
 					 }
-					 if(nodeId != -1)
+					 agentId = nodeId;
+					 tx.success();
+				}
+				try ( Transaction tx = graphDb.beginTx() )
+				{
+					 if(agentId != -1)
 					 {
-						 execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
-							execStr += "where id(Agent) = " + nodeId + " "; 
+						 String execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
+							execStr += "where id(Agent) = " + agentId + " "; 
 							execStr += "RETURN Plugin";
 							result = engine.query( execStr,null);
 							   
