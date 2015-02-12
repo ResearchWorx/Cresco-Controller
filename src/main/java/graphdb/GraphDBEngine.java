@@ -386,6 +386,7 @@ public class GraphDBEngine {
 					 return nodeId;
 				}
 			}
+			/*
 			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
 			{
 				long agentId = -1;
@@ -428,10 +429,13 @@ public class GraphDBEngine {
 					 tx.success();
 					 return nodeId;
 				}
-				/*
+				*/
+				
 				long agentNodeId = getNodeId(region, agent, null); //getting the agentNodeId
-				if(agentNodeId != -1)
+				try ( Transaction tx = graphDb.beginTx() )
 				{
+					if(agentNodeId != -1)
+					{
 						String execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
 						execStr += "where id(Agent) = " + agentNodeId + " "; 
 						execStr += "RETURN Plugin";
@@ -447,9 +451,10 @@ public class GraphDBEngine {
 						   nodeId = node.getId();
 						 }
 					
+					}
+					tx.success();
+					return nodeId;
 				}
-				*/
-			}
 			
 		
 	/*
@@ -458,14 +463,16 @@ public class GraphDBEngine {
 			System.out.println("Error : Checking Region=" + region + " Agent=" + agent + " Plugin=" + plugin + " " + ex.toString());
 		}
 		*/
+		/*		
 		if(nodeCount > 1)
 		{
 			System.out.println("Error : duplicate nodes!");
 			System.out.println("Could not add Region=" + region + " Agent=" + agent + " Plugin=" + plugin);
 		}
+		*/
 		//System.out.println("getNodeId=" + nodeId);
 		//System.out.println("NodeId : Region=" + region + " agent=" + agent + " plugin=" + plugin + " nodeId=" + nodeId);
-		return nodeId;
+		//return nodeId;
 	}
 
 	
