@@ -252,7 +252,7 @@ public class GraphDBEngine {
 		}
 	}
 	
-	public long getNodeId(String region, String agent, String plugin)
+	public long getNodeId2(String region, String agent, String plugin)
 	{
 		QueryResult<Map<String, Object>> result;
 		long nodeId = -1;
@@ -334,6 +334,136 @@ public class GraphDBEngine {
 		return nodeId;
 	}
 
+	public long getNodeId(String region, String agent, String plugin)
+	{
+		QueryResult<Map<String, Object>> result;
+		long nodeId = -1;
+		int nodeCount = 0;
+		
+		
+			if((region != null) && (agent == null) && (plugin == null)) //region node
+			{
+				try ( Transaction tx = graphDb.beginTx() )
+				{
+					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
+					execStr += "RETURN r";
+					result = engine.query(execStr, null);
+					
+					//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
+					Iterator<Map<String, Object>> iterator=result.iterator(); 
+					
+					if(iterator.hasNext()) { 
+					
+					   Map<String,Object> row= iterator.next(); 
+					   Node node  = (Node) row.get("r");
+						
+					   nodeCount++;
+					   nodeId = node.getId();
+					 }
+					tx.success();
+					return nodeId;
+				}
+				
+				
+			}
+			else if((region != null) && (agent != null) && (plugin == null)) //agent node
+			{
+				try ( Transaction tx = graphDb.beginTx() )
+				{
+					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })<-[:isAgent]-(Agent)";
+					execStr += "WHERE Agent.agentname = \"" + agent + "\"";
+					execStr += "RETURN Agent";
+					result = engine.query( execStr,null );
+					Iterator<Map<String, Object>> iterator=result.iterator(); 
+					 if(iterator.hasNext()) { 
+					   Map<String,Object> row= iterator.next(); 
+					   //out.print("Total nodes: " + row.get("total"));
+					   Node node  = (Node) row.get("Agent");
+					   nodeCount++;
+					   nodeId = node.getId();
+					 }
+					 tx.success();
+					 return nodeId;
+				}
+			}
+			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
+			{
+				
+				try ( Transaction tx = graphDb.beginTx() )
+				{
+					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })<-[:isAgent]-(Agent)";
+					execStr += "WHERE Agent.agentname = \"" + agent + "\"";
+					execStr += "RETURN Agent";
+					result = engine.query( execStr,null );
+					Iterator<Map<String, Object>> iterator=result.iterator(); 
+					 if(iterator.hasNext()) { 
+					   Map<String,Object> row= iterator.next(); 
+					   //out.print("Total nodes: " + row.get("total"));
+					   Node node  = (Node) row.get("Agent");
+					   nodeCount++;
+					   nodeId = node.getId();
+					 }
+					 if(nodeId != -1)
+					 {
+						 execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
+							execStr += "where id(Agent) = " + nodeId + " "; 
+							execStr += "RETURN Plugin";
+							result = engine.query( execStr,null);
+							   
+							Iterator<Map<String, Object>> iterator1=result.iterator(); 
+							 if(iterator1.hasNext()) { 
+								   
+							   Map<String,Object> row= iterator1.next(); 
+							   //out.print("Total nodes: " + row.get("total"));
+							   Node node  = (Node) row.get("Plugin");
+							   nodeCount++;
+							   nodeId = node.getId();
+							 }
+					 }
+					 tx.success();
+					 return nodeId;
+				}
+				/*
+				long agentNodeId = getNodeId(region, agent, null); //getting the agentNodeId
+				if(agentNodeId != -1)
+				{
+						String execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
+						execStr += "where id(Agent) = " + agentNodeId + " "; 
+						execStr += "RETURN Plugin";
+						result = engine.query( execStr,null);
+						   
+						Iterator<Map<String, Object>> iterator=result.iterator(); 
+						 if(iterator.hasNext()) { 
+							   
+						   Map<String,Object> row= iterator.next(); 
+						   //out.print("Total nodes: " + row.get("total"));
+						   Node node  = (Node) row.get("Plugin");
+						   nodeCount++;
+						   nodeId = node.getId();
+						 }
+					
+				}
+				*/
+			}
+			
+		
+	/*
+		catch(Exception ex)
+		{
+			System.out.println("Error : Checking Region=" + region + " Agent=" + agent + " Plugin=" + plugin + " " + ex.toString());
+		}
+		*/
+		if(nodeCount > 1)
+		{
+			System.out.println("Error : duplicate nodes!");
+			System.out.println("Could not add Region=" + region + " Agent=" + agent + " Plugin=" + plugin);
+		}
+		//System.out.println("getNodeId=" + nodeId);
+		//System.out.println("NodeId : Region=" + region + " agent=" + agent + " plugin=" + plugin + " nodeId=" + nodeId);
+		return nodeId;
+	}
+
+	
 	public Map<String,String> getNodeParams(String region, String agent, String plugin)
 	{
 		Map<String,String> paramMap = new HashMap<String,String>();
