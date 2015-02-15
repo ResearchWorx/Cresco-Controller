@@ -38,6 +38,7 @@ public class GraphDBEngine {
 	private static GraphDatabaseService graphDb;
 	private static RestCypherQueryEngine engine;
 
+	private static HashMap<String,Long> appMap;
 	private static HashMap<String,Long> nodeMap;
 	private static HashMap<String,Long> edgeMap;
 	private static Label regionLabel;
@@ -49,6 +50,7 @@ public class GraphDBEngine {
 	public GraphDBEngine()
 	{
 		
+			appMap = new HashMap<String,Long>();
 			nodeMap = new HashMap<String,Long>();
 			edgeMap = new HashMap<String,Long>();
 			
@@ -103,25 +105,34 @@ public class GraphDBEngine {
 	{
 		long nodeId = -1l;
 			
-				long regionNodeId = getAppNodeId(application);
-				if(regionNodeId == -1)
+				nodeId = getAppNodeId(application);
+				if(nodeId == -1)
 				{
 					try ( Transaction tx = graphDb.beginTx() )
 					{
 						Node aNode = graphDb.createNode( applicationLabel );
 						aNode.setProperty( "applicationname", application);
 						nodeId = aNode.getId();
+						appMap.put(application, nodeId);
 						tx.success();
 					}
 				}
-			
-			
+				else
+				{
+					System.out.println("Application Node Already Exist");
+				}
 		return nodeId;
 		
 	}
 	
 	public long getAppNodeId(String application)
 	{
+		//check cache
+		if(appMap.containsKey(application))
+		{
+			return appMap.get(application);
+		}
+		
 		QueryResult<Map<String, Object>> result;
 		long nodeId = -1;
 		int nodeCount = 0;
@@ -142,6 +153,7 @@ public class GraphDBEngine {
 						
 					   nodeCount++;
 					   nodeId = node.getId();
+					   appMap.put(application, nodeId);
 					 }
 				
 			tx.success();
@@ -236,6 +248,12 @@ public class GraphDBEngine {
 	
 	public Boolean isNode(String region, String agent, String plugin)
 	{
+		String nodeHash = region + "," + agent + "," + plugin;
+		if(nodeMap.containsKey(nodeHash))
+		{
+			return true;
+		}
+		
 		long nodeId = -1;
 		try ( Transaction tx = graphDb.beginTx() )
 		{
@@ -336,6 +354,12 @@ public class GraphDBEngine {
 
 	public long getNodeId(String region, String agent, String plugin)
 	{
+		String nodeHash = region + "," + agent + "," + plugin;
+		if(nodeMap.containsKey(nodeHash))
+		{
+			return nodeMap.get(nodeHash);
+		}
+		
 		QueryResult<Map<String, Object>> result;
 		long nodeId = -1;
 		int nodeCount = 0;
@@ -359,6 +383,7 @@ public class GraphDBEngine {
 						
 					   nodeCount++;
 					   nodeId = node.getId();
+					   nodeMap.put(nodeHash, nodeId);
 					 }
 					tx.success();
 					return nodeId;
@@ -381,6 +406,7 @@ public class GraphDBEngine {
 					   Node node  = (Node) row.get("Agent");
 					   nodeCount++;
 					   nodeId = node.getId();
+					   nodeMap.put(nodeHash, nodeId);
 					 }
 					 tx.success();
 					 return nodeId;
@@ -449,6 +475,7 @@ public class GraphDBEngine {
 						   Node node  = (Node) row.get("Plugin");
 						   nodeCount++;
 						   nodeId = node.getId();
+						   nodeMap.put(nodeHash, nodeId);
 						 }
 					
 					}
@@ -475,7 +502,6 @@ public class GraphDBEngine {
 		//return nodeId;
 	}
 
-	
 	public Map<String,String> getNodeParams(String region, String agent, String plugin)
 	{
 		Map<String,String> paramMap = new HashMap<String,String>();
@@ -640,6 +666,9 @@ public class GraphDBEngine {
 	
 	public void removeNode(String region, String agent, String plugin)
 	{
+		//clear cache on removal of anything
+		nodeMap.clear();
+		
 		if((region != null) && (agent == null) && (plugin == null)) //region node
 		{
 			QueryResult<Map<String, Object>> result;
@@ -792,6 +821,8 @@ public class GraphDBEngine {
 	
 	
 private void deleteNodesAndRelationships(long nodeId) {
+	
+		nodeMap.clear(); //clear cache on removal of anything
 		try ( Transaction tx = graphDb.beginTx() )
 		{
 		String query = "START n=node(" + nodeId + ") OPTIONAL MATCH n-[r]-() DELETE r, n;";
