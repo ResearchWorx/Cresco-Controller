@@ -461,7 +461,7 @@ public class GraphDBEngine {
 				    	System.out.println("Adding Plugin: " + plugin);
 						userNode = graphDb.createNode( pluginLabel );
 				        usersIndex.add( userNode, "pathname", pathname );
-				        userNode.setProperty( "pluginname", agent);
+				        userNode.setProperty( "pluginname", plugin);
 				    }
 				    tx.success();
 				    
