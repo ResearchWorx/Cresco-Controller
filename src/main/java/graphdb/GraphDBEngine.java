@@ -381,24 +381,7 @@ public class GraphDBEngine {
 		
 			if((region != null) && (agent == null) && (plugin == null)) //region node
 			{
-				/*
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						tx.acquireWriteLock( lockNode );
-						
-						Node aNode = graphDb.createNode( regionLabel );
-						aNode.setProperty( "regionname", region);
-						
-						nodeId = aNode.getId();
-						tx.success();
-					}
-					
-				}
-				*/
+				System.out.println("Adding Region: " + region);
 				try ( Transaction tx = graphDb.beginTx() )
 				{
 					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
@@ -422,12 +405,8 @@ public class GraphDBEngine {
 			}
 			else if((region != null) && (agent != null) && (plugin == null)) //agent node
 			{
-				
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					regionNodeId = addNode(region,null,null);
-				}
+				long regionNodeId = addNode(region,null,null);
+				System.out.println("Adding Agent: " + agent);
 				
 				try ( Transaction tx = graphDb.beginTx() )
 				{
@@ -447,6 +426,8 @@ public class GraphDBEngine {
 				        userNode.setProperty( "agentname", agent);
 				    }
 				    tx.success();
+				    System.out.println("Adding AgentConnections");
+					
 				    addEdge(nodeId,regionNodeId,RelType.isAgent);
 					return userNode.getId();
 				}
@@ -454,17 +435,12 @@ public class GraphDBEngine {
 			}
 			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
 			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					regionNodeId = addNode(region,null,null);
-				}
 				
-				long agentNodeId = getNodeId(region,agent,null);
-				if(agentNodeId == -1)
-				{
-					agentNodeId = addNode(region,agent,null);
-				}
+				long regionNodeId = addNode(region,null,null);
+				long agentNodeId = addNode(region,agent,null);
+				
+				System.out.println("Adding Plugin: " + plugin);
+				
 				try ( Transaction tx = graphDb.beginTx() )
 				{
 					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
@@ -483,6 +459,9 @@ public class GraphDBEngine {
 				        userNode.setProperty( "pluginname", agent);
 				    }
 				    tx.success();
+				    
+				    System.out.println("Adding Plugin Connections");
+					
 				    addEdge(nodeId,regionNodeId,RelType.isAgent);
 					return userNode.getId();
 				}
