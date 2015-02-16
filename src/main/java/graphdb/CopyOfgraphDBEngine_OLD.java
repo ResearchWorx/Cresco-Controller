@@ -22,7 +22,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-public class CopyOfgraphDBEngine {
+public class CopyOfgraphDBEngine_OLD {
 
 	private static GraphDatabaseService graphDb;
 	private static ExecutionEngine engine;
@@ -32,7 +32,7 @@ public class CopyOfgraphDBEngine {
 	private static Label pluginLabel;
 	
 	
-	public CopyOfgraphDBEngine()
+	public CopyOfgraphDBEngine_OLD()
 	{
 			
 			graphDb = new GraphDatabaseFactory()

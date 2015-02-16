@@ -66,31 +66,8 @@ public class GraphDBEngine {
 			{
 				System.out.println("Could not init REST DB");
 			}
-			/*
-			graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(
-			        dbCheck() )
-			        .setConfig( GraphDatabaseSettings.read_only, "true" )
-			        .newGraphDatabase();
-			
-			*/
-			/*
-			graphDb = new GraphDatabaseFactory()
-		    .newEmbeddedDatabaseBuilder( dbCheck() )
-		    .setConfig( GraphDatabaseSettings.nodestore_mapped_memory_size, "10M" )
-		    .setConfig( GraphDatabaseSettings.allow_store_upgrade,"true" )
-		    .setConfig( GraphDatabaseSettings.string_block_size, "60" )
-		    .setConfig( GraphDatabaseSettings.array_block_size, "300" )
-		    .newGraphDatabase();
-			*/
 		
 			engine = new RestCypherQueryEngine(new RestAPIFacade("http://localhost:7474/db/data"));
-			//results = engine.query(cypher, null)
-					
-			//engine = new ExecutionEngine(graphDb,StringLogger.SYSTEM);
-			
-			/*
-			new WrappingNeoServerBootstrapper((GraphDatabaseAPI)graphDb).start();
-			*/
 			
 			try ( Transaction tx = graphDb.beginTx() )
 			{
@@ -139,237 +116,71 @@ public class GraphDBEngine {
 			
 	}
 	
+	
 	public long addAppNode(String application)
 	{
-		long nodeId = -1l;
-			
-				nodeId = getAppNodeId(application);
-				if(nodeId == -1)
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+				Index<Node> usersIndex = graphDb.index().forNodes( "application" );
+				Node userNode = usersIndex.get( "applicationname", application ).getSingle();
+				if ( userNode != null )
 				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						Node aNode = graphDb.createNode( applicationLabel );
-						aNode.setProperty( "applicationname", application);
-						nodeId = aNode.getId();
-						appMap.put(application, nodeId);
-						tx.success();
-					}
+					return userNode.getId();
 				}
-				else
-				{
-					System.out.println("Application Node Already Exist");
-				}
-		return nodeId;
 		
+				tx.acquireWriteLock( lockNode );
+				userNode = usersIndex.get( "applicationname", application ).getSingle();
+				if ( userNode == null )
+				{
+					System.out.println("Adding Application: " + application);
+				
+					userNode = graphDb.createNode( applicationLabel );
+					usersIndex.add( userNode, "applicationname", application );
+					userNode.setProperty( "applicationname", application);
+				}
+				tx.success();
+				System.out.println("Application NodeId: " + userNode.getId());
+				return userNode.getId();
+			}
 	}
 	
 	public long getAppNodeId(String application)
 	{
-		//check cache
-		if(appMap.containsKey(application))
-		{
-			return appMap.get(application);
-		}
-		
-		QueryResult<Map<String, Object>> result;
-		long nodeId = -1;
-		int nodeCount = 0;
-		
-		try ( Transaction tx = graphDb.beginTx() )
-		{
-					String execStr = "MATCH (a:Application { applicationname:\"" + application + "\" })";
-					execStr += "RETURN a";
-					result = engine.query(execStr, null);
-					
-					//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
-					Iterator<Map<String, Object>> iterator=result.iterator(); 
-					
-					if(iterator.hasNext()) { 
-					
-					   Map<String,Object> row= iterator.next(); 
-					   Node node  = (Node) row.get("a");
-						
-					   nodeCount++;
-					   nodeId = node.getId();
-					   appMap.put(application, nodeId);
-					 }
-				
-			tx.success();
-		}
-		catch(Exception ex)
-		{
-			System.out.println("Error : Checking Application=" + application + " " + ex.toString());
-		}
-		if(nodeCount > 1)
-		{
-			System.out.println("Error : duplicate nodes!");
-			System.out.println("Could not add Application=" + application);
-		}
-		//System.out.println("getNodeId=" + nodeId);
-		//System.out.println("NodeId : Region=" + region + " agent=" + agent + " plugin=" + plugin + " nodeId=" + nodeId);
-		return nodeId;
-	}
-
-	public long addNode1(String region, String agent, String plugin)
-	{
 		long nodeId = -1l;
 		
-			if((region != null) && (agent == null) && (plugin == null)) //region node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
+				try ( Transaction tx = graphDb.beginTx() )
 				{
-					/*
-					try ( Transaction tx = graphDb.beginTx() )
+					Index<Node> usersIndex = graphDb.index().forNodes( "application" );
+					Node userNode = usersIndex.get( "applicationname", application ).getSingle();
+					if ( userNode != null )
 					{
-						Node aNode = graphDb.createNode( regionLabel );
-						aNode.setProperty( "regionname", region);
-						
-						nodeId = aNode.getId();
 						tx.success();
+				        return userNode.getId();
 					}
-					*/
-					//Node result = null;
-					QueryResult<Map<String, Object>> result;
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						//String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
-						//execStr += "RETURN r";
-						String execStr = "MERGE (n:Region {regionname: {\"" + region + "\"}}) RETURN n";
-						result = engine.query(execStr, null);
-						
-						//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
-						Iterator<Map<String, Object>> iterator=result.iterator(); 
-						
-						if(iterator.hasNext()) { 
-						
-						   Map<String,Object> row= iterator.next(); 
-						   Node node  = (Node) row.get("n");
-							
-						   //nodeCount++;
-						   nodeId = node.getId();
-						   //nodeMap.put(nodeHash, nodeId);
-						 }
-						tx.success();
-						return nodeId;
-					}					
-					
+				    
 				}
 				
-			}
-			else if((region != null) && (agent != null) && (plugin == null)) //agent node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
+		return nodeId;
+		
+	}
+		
+	public long getNodeId(String region, String agent, String plugin)
+	{
+		long nodeId = -1l;
+		String pathname = region + "," + agent + "," + plugin;
+		
+				try ( Transaction tx = graphDb.beginTx() )
 				{
-					regionNodeId = addNode(region,null,null);
+					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
+					Node userNode = usersIndex.get( "pathname", pathname ).getSingle();
+					if ( userNode != null )
+					{
+						tx.success();
+				        return userNode.getId();
+					}
+				    
 				}
 				
-				long agentNodeId = getNodeId(region,agent,null);
-				if(agentNodeId == -1)
-				{
-					/*
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						Node aNode = graphDb.createNode( agentLabel );
-						aNode.setProperty( "agentname", agent);
-						nodeId = aNode.getId();
-						//addEdge(regionNodeId,nodeId,RelType.isAgent);
-						addEdge(nodeId,regionNodeId,RelType.isAgent);
-						tx.success();
-					}
-					*/
-					QueryResult<Map<String, Object>> result;
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						//String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
-						//execStr += "RETURN r";
-						String execStr = "MERGE (n:Agent {agentname: {\"" + agent + "\"}}) RETURN n";
-						result = engine.query(execStr, null);
-						
-						//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
-						Iterator<Map<String, Object>> iterator=result.iterator(); 
-						
-						if(iterator.hasNext()) { 
-						
-						   Map<String,Object> row= iterator.next(); 
-						   Node node  = (Node) row.get("n");
-							
-						   //nodeCount++;
-						   nodeId = node.getId();
-						   //nodeMap.put(nodeHash, nodeId);
-						 }
-						tx.success();
-						
-					}
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						addEdge(nodeId,regionNodeId,RelType.isAgent);
-						tx.success();
-					}
-					return nodeId;
-					
-				}
-			}
-			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					regionNodeId = addNode(region,null,null);
-				}
-				
-				long agentNodeId = getNodeId(region,agent,null);
-				if(agentNodeId == -1)
-				{
-					agentNodeId = addNode(region,agent,null);
-				}
-				
-				long pluginNodeId = getNodeId(region,agent,plugin);
-				if(pluginNodeId == -1)
-				{
-					/*
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-					Node aNode = graphDb.createNode( pluginLabel );
-					aNode.setProperty( "pluginname", plugin);
-					nodeId = aNode.getId();
-					addEdge(nodeId,agentNodeId,RelType.isPlugin);
-					tx.success();
-					}
-					*/
-					QueryResult<Map<String, Object>> result;
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						//String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
-						//execStr += "RETURN r";
-						String execStr = "MERGE (n:Plugin {pluginname: {\"" + plugin + "\"}}) RETURN n";
-						result = engine.query(execStr, null);
-						
-						//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
-						Iterator<Map<String, Object>> iterator=result.iterator(); 
-						
-						if(iterator.hasNext()) { 
-						
-						   Map<String,Object> row= iterator.next(); 
-						   Node node  = (Node) row.get("r");
-							
-						   //nodeCount++;
-						   nodeId = node.getId();
-						   //nodeMap.put(nodeHash, nodeId);
-						 }
-						tx.success();
-					}
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-					addEdge(nodeId,agentNodeId,RelType.isPlugin);
-					tx.success();
-					}
-					return nodeId;
-				}
-				
-			}
-			
 		return nodeId;
 		
 	}
@@ -480,428 +291,9 @@ public class GraphDBEngine {
 		return nodeId;
 		
 	}
-	
-	
-	public long addNode4(String region, String agent, String plugin)
-	{
-		System.out.println("AddNode: " + region + "," + agent + "," + plugin);
-		long nodeId = -1l;
-		
-			if((region != null) && (agent == null) && (plugin == null)) //region node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						tx.acquireWriteLock( lockNode );
-						
-						Node aNode = graphDb.createNode( regionLabel );
-						aNode.setProperty( "regionname", region);
-						
-						nodeId = aNode.getId();
-						tx.success();
-					}
-				}
-				
-			}
-			else if((region != null) && (agent != null) && (plugin == null)) //agent node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					regionNodeId = addNode(region,null,null);
-				}
-				
-				long agentNodeId = getNodeId(region,agent,null);
-				if(agentNodeId == -1)
-				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						tx.acquireWriteLock( lockNode );
-						
-						Node aNode = graphDb.createNode( agentLabel );
-						aNode.setProperty( "agentname", agent);
-						nodeId = aNode.getId();
-						//addEdge(regionNodeId,nodeId,RelType.isAgent);
-						tx.success();
-					}
-					addEdge(nodeId,regionNodeId,RelType.isAgent);
-					return nodeId;
-				}
-			}
-			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					regionNodeId = addNode(region,null,null);
-				}
-				
-				long agentNodeId = getNodeId(region,agent,null);
-				if(agentNodeId == -1)
-				{
-					agentNodeId = addNode(region,agent,null);
-				}
-				
-				long pluginNodeId = getNodeId(region,agent,plugin);
-				if(pluginNodeId == -1)
-				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						tx.acquireWriteLock( lockNode );
-						
-						Node aNode = graphDb.createNode( pluginLabel );
-						aNode.setProperty( "pluginname", plugin);
-						nodeId = aNode.getId();
-						tx.success();
-					}
-					addEdge(nodeId,agentNodeId,RelType.isPlugin);
-					return nodeId;
-				}
-				
-			}
-			
-		return nodeId;
-		
-	}
-	
-	public long addNode3(String region, String agent, String plugin)
-	{
-		System.out.println("AddNode: " + region + "," + agent + "," + plugin);
-		long nodeId = -1l;
-		
-			if((region != null) && (agent == null) && (plugin == null)) //region node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						Node aNode = graphDb.createNode( regionLabel );
-						aNode.setProperty( "regionname", region);
-						
-						nodeId = aNode.getId();
-						tx.success();
-					}
-				}
-				
-			}
-			else if((region != null) && (agent != null) && (plugin == null)) //agent node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					regionNodeId = addNode(region,null,null);
-				}
-				
-				long agentNodeId = getNodeId(region,agent,null);
-				if(agentNodeId == -1)
-				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						Node aNode = graphDb.createNode( agentLabel );
-						aNode.setProperty( "agentname", agent);
-						nodeId = aNode.getId();
-						//addEdge(regionNodeId,nodeId,RelType.isAgent);
-						tx.success();
-					}
-					addEdge(nodeId,regionNodeId,RelType.isAgent);
-					return nodeId;
-				}
-			}
-			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
-			{
-				long regionNodeId = getNodeId(region,null,null);
-				if(regionNodeId == -1)
-				{
-					regionNodeId = addNode(region,null,null);
-				}
-				
-				long agentNodeId = getNodeId(region,agent,null);
-				if(agentNodeId == -1)
-				{
-					agentNodeId = addNode(region,agent,null);
-				}
-				
-				long pluginNodeId = getNodeId(region,agent,plugin);
-				if(pluginNodeId == -1)
-				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-					Node aNode = graphDb.createNode( pluginLabel );
-					aNode.setProperty( "pluginname", plugin);
-					nodeId = aNode.getId();
-					tx.success();
-					}
-					addEdge(nodeId,agentNodeId,RelType.isPlugin);
-					return nodeId;
-				}
-				
-			}
-			
-		return nodeId;
-		
-	}
-	
-	public Boolean isNode(String region, String agent, String plugin)
-	{
-		String nodeHash = region + "," + agent + "," + plugin;
-		if(nodeMap.containsKey(nodeHash))
-		{
-			return true;
-		}
-		
-		long nodeId = -1;
-		try ( Transaction tx = graphDb.beginTx() )
-		{
-			nodeId = getNodeId(region, agent, plugin);
-			tx.success();
-		}
-		if(nodeId != -1)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-	
-	public long getNodeId2(String region, String agent, String plugin)
-	{
-		QueryResult<Map<String, Object>> result;
-		long nodeId = -1;
-		int nodeCount = 0;
-		
-		try ( Transaction tx = graphDb.beginTx() )
-		{
-			if((region != null) && (agent == null) && (plugin == null)) //region node
-			{
-				
-					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
-					execStr += "RETURN r";
-					result = engine.query(execStr, null);
-					
-					//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
-					Iterator<Map<String, Object>> iterator=result.iterator(); 
-					
-					if(iterator.hasNext()) { 
-					
-					   Map<String,Object> row= iterator.next(); 
-					   Node node  = (Node) row.get("r");
-						
-					   nodeCount++;
-					   nodeId = node.getId();
-					 }
-				
-			}
-			else if((region != null) && (agent != null) && (plugin == null)) //agent node
-			{
-					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })<-[:isAgent]-(Agent)";
-					execStr += "WHERE Agent.agentname = \"" + agent + "\"";
-					execStr += "RETURN Agent";
-					result = engine.query( execStr,null );
-					Iterator<Map<String, Object>> iterator=result.iterator(); 
-					 if(iterator.hasNext()) { 
-					   Map<String,Object> row= iterator.next(); 
-					   //out.print("Total nodes: " + row.get("total"));
-					   Node node  = (Node) row.get("Agent");
-					   nodeCount++;
-					   nodeId = node.getId();
-					 }
-				
-			}
-			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
-			{
-				long agentNodeId = getNodeId(region, agent, null); //getting the agentNodeId
-				if(agentNodeId != -1)
-				{
-						String execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
-						execStr += "where id(Agent) = " + agentNodeId + " "; 
-						execStr += "RETURN Plugin";
-						result = engine.query( execStr,null);
-						   
-						Iterator<Map<String, Object>> iterator=result.iterator(); 
-						 if(iterator.hasNext()) { 
-							   
-						   Map<String,Object> row= iterator.next(); 
-						   //out.print("Total nodes: " + row.get("total"));
-						   Node node  = (Node) row.get("Plugin");
-						   nodeCount++;
-						   nodeId = node.getId();
-						 }
-					
-				}
-			}
-			tx.success();
-		}
-		catch(Exception ex)
-		{
-			System.out.println("Error : Checking Region=" + region + " Agent=" + agent + " Plugin=" + plugin + " " + ex.toString());
-		}
-		if(nodeCount > 1)
-		{
-			System.out.println("Error : duplicate nodes!");
-			System.out.println("Could not add Region=" + region + " Agent=" + agent + " Plugin=" + plugin);
-		}
-		//System.out.println("getNodeId=" + nodeId);
-		//System.out.println("NodeId : Region=" + region + " agent=" + agent + " plugin=" + plugin + " nodeId=" + nodeId);
-		return nodeId;
-	}
 
-	public long getNodeId(String region, String agent, String plugin)
-	{
-		String nodeHash = region + "," + agent + "," + plugin;
-		if(nodeMap.containsKey(nodeHash))
-		{
-			return nodeMap.get(nodeHash);
-		}
-		
-		QueryResult<Map<String, Object>> result;
-		long nodeId = -1;
-		int nodeCount = 0;
-		
-		
-			if((region != null) && (agent == null) && (plugin == null)) //region node
-			{
-				try ( Transaction tx = graphDb.beginTx() )
-				{
-					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
-					execStr += "RETURN r";
-					result = engine.query(execStr, null);
-					
-					//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
-					Iterator<Map<String, Object>> iterator=result.iterator(); 
-					
-					if(iterator.hasNext()) { 
-					
-					   Map<String,Object> row= iterator.next(); 
-					   Node node  = (Node) row.get("r");
-						
-					   nodeCount++;
-					   nodeId = node.getId();
-					   nodeMap.put(nodeHash, nodeId);
-					 }
-					tx.success();
-					return nodeId;
-				}
-				
-				
-			}
-			else if((region != null) && (agent != null) && (plugin == null)) //agent node
-			{
-				try ( Transaction tx = graphDb.beginTx() )
-				{
-					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })<-[:isAgent]-(Agent)";
-					execStr += "WHERE Agent.agentname = \"" + agent + "\"";
-					execStr += "RETURN Agent";
-					result = engine.query( execStr,null );
-					Iterator<Map<String, Object>> iterator=result.iterator(); 
-					 if(iterator.hasNext()) { 
-					   Map<String,Object> row= iterator.next(); 
-					   //out.print("Total nodes: " + row.get("total"));
-					   Node node  = (Node) row.get("Agent");
-					   nodeCount++;
-					   nodeId = node.getId();
-					   nodeMap.put(nodeHash, nodeId);
-					 }
-					 tx.success();
-					 return nodeId;
-				}
-			}
-			/*
-			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
-			{
-				long agentId = -1;
-				try ( Transaction tx = graphDb.beginTx() )
-				{
-					String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })<-[:isAgent]-(Agent)";
-					execStr += "WHERE Agent.agentname = \"" + agent + "\"";
-					execStr += "RETURN Agent";
-					result = engine.query( execStr,null );
-					Iterator<Map<String, Object>> iterator=result.iterator(); 
-					 if(iterator.hasNext()) { 
-					   Map<String,Object> row= iterator.next(); 
-					   //out.print("Total nodes: " + row.get("total"));
-					   Node node  = (Node) row.get("Agent");
-					   nodeCount++;
-					   nodeId = node.getId();
-					 }
-					 agentId = nodeId;
-					 tx.success();
-				}
-				try ( Transaction tx = graphDb.beginTx() )
-				{
-					 if(agentId != -1)
-					 {
-						 String execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
-							execStr += "where id(Agent) = " + agentId + " "; 
-							execStr += "RETURN Plugin";
-							result = engine.query( execStr,null);
-							   
-							Iterator<Map<String, Object>> iterator1=result.iterator(); 
-							 if(iterator1.hasNext()) { 
-								   
-							   Map<String,Object> row= iterator1.next(); 
-							   //out.print("Total nodes: " + row.get("total"));
-							   Node node  = (Node) row.get("Plugin");
-							   nodeCount++;
-							   nodeId = node.getId();
-							 }
-					 }
-					 tx.success();
-					 return nodeId;
-				}
-				*/
-			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
-			{	
-				long agentNodeId = getNodeId(region, agent, null); //getting the agentNodeId
-				try ( Transaction tx = graphDb.beginTx() )
-				{
-					if(agentNodeId != -1)
-					{
-						String execStr = "match (Agent)<-[:isPlugin]-(Plugin { pluginname:\"" + plugin + "\" })"; 
-						execStr += "where id(Agent) = " + agentNodeId + " "; 
-						execStr += "RETURN Plugin";
-						result = engine.query( execStr,null);
-						   
-						Iterator<Map<String, Object>> iterator=result.iterator(); 
-						 if(iterator.hasNext()) { 
-							   
-						   Map<String,Object> row= iterator.next(); 
-						   //out.print("Total nodes: " + row.get("total"));
-						   Node node  = (Node) row.get("Plugin");
-						   nodeCount++;
-						   nodeId = node.getId();
-						   nodeMap.put(nodeHash, nodeId);
-						 }
-					
-					}
-					tx.success();
-					return nodeId;
-				}
-			}
-		
-	/*
-		catch(Exception ex)
-		{
-			System.out.println("Error : Checking Region=" + region + " Agent=" + agent + " Plugin=" + plugin + " " + ex.toString());
-		}
-		*/
-		/*		
-		if(nodeCount > 1)
-		{
-			System.out.println("Error : duplicate nodes!");
-			System.out.println("Could not add Region=" + region + " Agent=" + agent + " Plugin=" + plugin);
-		}
-		*/
-		//System.out.println("getNodeId=" + nodeId);
-		//System.out.println("NodeId : Region=" + region + " agent=" + agent + " plugin=" + plugin + " nodeId=" + nodeId);
-		//return nodeId;
-		return nodeId;
-	}
-
+	
+	
 	public Map<String,String> getNodeParams(String region, String agent, String plugin)
 	{
 		Map<String,String> paramMap = new HashMap<String,String>();
@@ -1222,7 +614,7 @@ public class GraphDBEngine {
 	}
 	
 	
-private void deleteNodesAndRelationships(long nodeId) {
+	private void deleteNodesAndRelationships(long nodeId) {
 	
 		nodeMap.clear(); //clear cache on removal of anything
 		try ( Transaction tx = graphDb.beginTx() )

@@ -117,7 +117,7 @@ public class httpServerEngine implements Runnable{
     } 
     
     private static URI getBaseURI() {
-    	
+    	/*
     	InetAddress address = null;
     	try {
     		address = InetAddress.getLocalHost();
@@ -127,8 +127,9 @@ public class httpServerEngine implements Runnable{
 		   e.printStackTrace();
     	
 		}  
-    	
-    	return UriBuilder.fromUri("http://" + ipAddress + "/").port(getPort(32000)).build();
+    	*/
+    	//return UriBuilder.fromUri("http://" + ipAddress + "/").port(getPort(32000)).build();
+    	return UriBuilder.fromUri("http://0.0.0.0/").port(getPort(32000)).build();
         
     }
 
