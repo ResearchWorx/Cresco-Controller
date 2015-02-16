@@ -738,8 +738,10 @@ public class GraphDBEngine {
 		
 				long regionNodeId = getNodeId(region,null,null);
 				//nodes.add(graphDb.getNodeById(regionNodeId));
-				deleteNodesAndRelationships(regionNodeId);
-			
+				if(regionNodeId != -1)
+				{
+					deleteNodesAndRelationships(regionNodeId);
+				}
 		}
 		else if((region != null) && (agent != null) && (plugin == null)) //agent node
 		{
