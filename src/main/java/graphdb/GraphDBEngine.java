@@ -101,24 +101,32 @@ public class GraphDBEngine {
 			
 			try ( Transaction tx = graphDb.beginTx() )
 			{
-			    graphDb.schema()
-			            .constraintFor(regionLabel)
-			            .assertPropertyIsUnique( "regionname" )
-			            .create();
-			    /*
-			    graphDb.schema()
-	            .constraintFor(agentLabel)
-	            .assertPropertyIsUnique( "agentname" )
-	            .create();
-		
-			    graphDb.schema()
-	            .constraintFor(agentLabel)
-	            .assertPropertyIsUnique( "agnetname" )
-	            .create();
-	    */
-			    tx.success();
+			String query = "CREATE CONSTRAINT ON (Region:Region) ASSERT Region.regionname IS UNIQUE;";
+			QueryResult<Map<String, Object>> result = engine.query(query, null);
+			tx.success();
+			}
+			
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+			String query = "CREATE CONSTRAINT ON (Agent:Agent) ASSERT Agent.agentname IS UNIQUE;";
+			QueryResult<Map<String, Object>> result = engine.query(query, null);
+			tx.success();
 			}
 
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+			String query = "CREATE CONSTRAINT ON (Plugin:Plugin) ASSERT Plugin.pluginname IS UNIQUE;";
+			QueryResult<Map<String, Object>> result = engine.query(query, null);
+			tx.success();
+			}
+			
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+			String query = "CREATE CONSTRAINT ON (Application:Application) ASSERT Application.applicationname IS UNIQUE;";
+			QueryResult<Map<String, Object>> result = engine.query(query, null);
+			tx.success();
+			}
+			
 			
 	}
 	
@@ -206,6 +214,7 @@ public class GraphDBEngine {
 					{
 						Node aNode = graphDb.createNode( regionLabel );
 						aNode.setProperty( "regionname", region);
+						
 						nodeId = aNode.getId();
 						tx.success();
 					}
