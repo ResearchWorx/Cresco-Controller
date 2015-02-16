@@ -114,14 +114,15 @@ public class GraphDBEngine {
 			QueryResult<Map<String, Object>> result = engine.query(query, null);
 			tx.success();
 			}
-
+			/*
 			try ( Transaction tx = graphDb.beginTx() )
 			{
 			String query = "CREATE CONSTRAINT ON (Plugin:Plugin) ASSERT Plugin.pluginname IS UNIQUE;";
 			QueryResult<Map<String, Object>> result = engine.query(query, null);
 			tx.success();
 			}
-			
+			//DROP CONSTRAINT ON (Plugin:Plugin) ASSERT Plugin.pluginname IS UNIQUE
+			*/		
 			try ( Transaction tx = graphDb.beginTx() )
 			{
 			String query = "CREATE CONSTRAINT ON (Application:Application) ASSERT Application.applicationname IS UNIQUE;";
