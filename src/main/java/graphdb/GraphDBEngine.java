@@ -376,6 +376,126 @@ public class GraphDBEngine {
 	
 	public long addNode(String region, String agent, String plugin)
 	{
+		long nodeId = -1l;
+		String pathname = region + "," + agent + "," + plugin;
+		
+			if((region != null) && (agent == null) && (plugin == null)) //region node
+			{
+				/*
+				long regionNodeId = getNodeId(region,null,null);
+				if(regionNodeId == -1)
+				{
+					
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+						tx.acquireWriteLock( lockNode );
+						
+						Node aNode = graphDb.createNode( regionLabel );
+						aNode.setProperty( "regionname", region);
+						
+						nodeId = aNode.getId();
+						tx.success();
+					}
+					
+				}
+				*/
+				try ( Transaction tx = graphDb.beginTx() )
+				{
+					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
+					Node userNode = usersIndex.get( "pathname", pathname ).getSingle();
+					if ( userNode != null )
+					{
+				        return userNode.getId();
+					}
+				
+					tx.acquireWriteLock( lockNode );
+				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
+				    if ( userNode == null )
+				    {
+				        userNode = graphDb.createNode( regionLabel );
+				        usersIndex.add( userNode, "pathname", pathname );
+				        userNode.setProperty( "regionname", region);
+				    }
+				    tx.success();
+				    return userNode.getId();
+				}
+			}
+			else if((region != null) && (agent != null) && (plugin == null)) //agent node
+			{
+				
+				long regionNodeId = getNodeId(region,null,null);
+				if(regionNodeId == -1)
+				{
+					regionNodeId = addNode(region,null,null);
+				}
+				
+				try ( Transaction tx = graphDb.beginTx() )
+				{
+					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
+					Node userNode = usersIndex.get( "pathname", pathname ).getSingle();
+					if ( userNode != null )
+					{
+				        return userNode.getId();
+					}
+				
+					tx.acquireWriteLock( lockNode );
+				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
+				    if ( userNode == null )
+				    {
+				        userNode = graphDb.createNode( agentLabel );
+				        usersIndex.add( userNode, "pathname", pathname );
+				        userNode.setProperty( "agentname", agent);
+				    }
+				    tx.success();
+				    addEdge(nodeId,regionNodeId,RelType.isAgent);
+					return userNode.getId();
+				}
+					
+			}
+			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
+			{
+				long regionNodeId = getNodeId(region,null,null);
+				if(regionNodeId == -1)
+				{
+					regionNodeId = addNode(region,null,null);
+				}
+				
+				long agentNodeId = getNodeId(region,agent,null);
+				if(agentNodeId == -1)
+				{
+					agentNodeId = addNode(region,agent,null);
+				}
+				try ( Transaction tx = graphDb.beginTx() )
+				{
+					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
+					Node userNode = usersIndex.get( "pathname", pathname ).getSingle();
+					if ( userNode != null )
+					{
+				        return userNode.getId();
+					}
+				
+					tx.acquireWriteLock( lockNode );
+				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
+				    if ( userNode == null )
+				    {
+				        userNode = graphDb.createNode( pluginLabel );
+				        usersIndex.add( userNode, "pathname", pathname );
+				        userNode.setProperty( "pluginname", agent);
+				    }
+				    tx.success();
+				    addEdge(nodeId,regionNodeId,RelType.isAgent);
+					return userNode.getId();
+				}
+				
+			}
+			
+		return nodeId;
+		
+	}
+	
+	
+	public long addNode4(String region, String agent, String plugin)
+	{
 		System.out.println("AddNode: " + region + "," + agent + "," + plugin);
 		long nodeId = -1l;
 		
