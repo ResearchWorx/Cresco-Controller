@@ -105,7 +105,7 @@ public class GraphDBEngine {
 			            .constraintFor(regionLabel)
 			            .assertPropertyIsUnique( "regionname" )
 			            .create();
-			    
+			    /*
 			    graphDb.schema()
 	            .constraintFor(agentLabel)
 	            .assertPropertyIsUnique( "agentname" )
@@ -115,7 +115,7 @@ public class GraphDBEngine {
 	            .constraintFor(agentLabel)
 	            .assertPropertyIsUnique( "agnetname" )
 	            .create();
-	    
+	    */
 			    tx.success();
 			}
 
