@@ -426,11 +426,14 @@ public class GraphDBEngine {
 				        userNode.setProperty( "agentname", agent);
 				    }
 				    tx.success();
-				    System.out.println("Adding AgentConnections");
-					
-				    addEdge(nodeId,regionNodeId,RelType.isAgent);
-					return userNode.getId();
+				    
+					nodeId = userNode.getId();
 				}
+				System.out.println("Adding AgentConnections");
+				addEdge(nodeId,regionNodeId,RelType.isAgent);
+			    System.out.println("End AgentConnections");
+				
+			    return nodeId;
 					
 			}
 			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
@@ -461,10 +464,13 @@ public class GraphDBEngine {
 				    tx.success();
 				    
 				    System.out.println("Adding Plugin Connections");
-					
-				    addEdge(nodeId,regionNodeId,RelType.isAgent);
-					return userNode.getId();
+					nodeId = userNode.getId();
+				    //return userNode.getId();
 				}
+				System.out.println("Adding Plugin Connections");
+				addEdge(nodeId,regionNodeId,RelType.isAgent);
+				System.out.println("End Plugin Connections");
+				return nodeId;
 				
 			}
 			
