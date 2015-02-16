@@ -453,7 +453,7 @@ public class GraphDBEngine {
 					{
 				        return userNode.getId();
 					}
-				
+				///
 					tx.acquireWriteLock( lockNode );
 				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
 				    if ( userNode == null )
