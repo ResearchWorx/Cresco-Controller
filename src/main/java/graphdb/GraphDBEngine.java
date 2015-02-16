@@ -58,6 +58,7 @@ public class GraphDBEngine {
 			{
 				graphDb = new RestGraphDatabase("http://localhost:7474/db/data");
 				
+
 			}
 			catch(Exception ex)
 			{
@@ -96,6 +97,26 @@ public class GraphDBEngine {
 	        pluginLabel = DynamicLabel.label( "Plugin" );
 	        applicationLabel = DynamicLabel.label( "Application" );
 	        tx.success();
+			}
+			
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+			    graphDb.schema()
+			            .constraintFor(regionLabel)
+			            .assertPropertyIsUnique( "regionname" )
+			            .create();
+			    
+			    graphDb.schema()
+	            .constraintFor(agentLabel)
+	            .assertPropertyIsUnique( "agentname" )
+	            .create();
+		
+			    graphDb.schema()
+	            .constraintFor(agentLabel)
+	            .assertPropertyIsUnique( "agnetname" )
+	            .create();
+	    
+			    tx.success();
 			}
 
 			
