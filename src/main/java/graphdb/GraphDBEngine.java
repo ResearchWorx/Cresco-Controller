@@ -400,6 +400,7 @@ public class GraphDBEngine {
 				        userNode.setProperty( "regionname", region);
 				    }
 				    tx.success();
+				    System.out.println("Regional NodeId: " + userNode.getId());
 				    return userNode.getId();
 				}
 			}
@@ -428,12 +429,13 @@ public class GraphDBEngine {
 				    tx.success();
 				    
 					nodeId = userNode.getId();
+					System.out.println("Regional NodeId: " + regionNodeId  + " agent NodeId: " + nodeId);
+				    
 				}
 				System.out.println("Adding AgentConnections");
 				addEdge(nodeId,regionNodeId,RelType.isAgent);
 			    System.out.println("End AgentConnections");
-				
-			    return nodeId;
+				return nodeId;
 					
 			}
 			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
