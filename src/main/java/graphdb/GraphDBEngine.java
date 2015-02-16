@@ -381,7 +381,6 @@ public class GraphDBEngine {
 		
 			if((region != null) && (agent == null) && (plugin == null)) //region node
 			{
-				System.out.println("Adding Region: " + region);
 				try ( Transaction tx = graphDb.beginTx() )
 				{
 					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
@@ -395,6 +394,8 @@ public class GraphDBEngine {
 				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
 				    if ( userNode == null )
 				    {
+				    	System.out.println("Adding Region: " + region);
+						
 				        userNode = graphDb.createNode( regionLabel );
 				        usersIndex.add( userNode, "pathname", pathname );
 				        userNode.setProperty( "regionname", region);
@@ -407,7 +408,6 @@ public class GraphDBEngine {
 			else if((region != null) && (agent != null) && (plugin == null)) //agent node
 			{
 				long regionNodeId = addNode(region,null,null);
-				System.out.println("Adding Agent: " + agent);
 				
 				try ( Transaction tx = graphDb.beginTx() )
 				{
@@ -422,7 +422,8 @@ public class GraphDBEngine {
 				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
 				    if ( userNode == null )
 				    {
-				        userNode = graphDb.createNode( agentLabel );
+				    	System.out.println("Adding Agent: " + agent);
+						userNode = graphDb.createNode( agentLabel );
 				        usersIndex.add( userNode, "pathname", pathname );
 				        userNode.setProperty( "agentname", agent);
 				    }
@@ -444,8 +445,6 @@ public class GraphDBEngine {
 				long regionNodeId = addNode(region,null,null);
 				long agentNodeId = addNode(region,agent,null);
 				
-				System.out.println("Adding Plugin: " + plugin);
-				
 				try ( Transaction tx = graphDb.beginTx() )
 				{
 					Index<Node> usersIndex = graphDb.index().forNodes( "nodes" );
@@ -459,18 +458,20 @@ public class GraphDBEngine {
 				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
 				    if ( userNode == null )
 				    {
-				        userNode = graphDb.createNode( pluginLabel );
+				    	System.out.println("Adding Plugin: " + plugin);
+						userNode = graphDb.createNode( pluginLabel );
 				        usersIndex.add( userNode, "pathname", pathname );
 				        userNode.setProperty( "pluginname", agent);
 				    }
 				    tx.success();
 				    
-				    System.out.println("Adding Plugin Connections");
-					nodeId = userNode.getId();
+				    nodeId = userNode.getId();
+				    System.out.println("Regional NodeId: " + regionNodeId  + " agent NodeId: " + agentNodeId + " pluginNodeId: " + nodeId);
+				    
 				    //return userNode.getId();
 				}
 				System.out.println("Adding Plugin Connections");
-				addEdge(nodeId,regionNodeId,RelType.isAgent);
+				addEdge(nodeId,agentNodeId,RelType.isPlugin);
 				System.out.println("End Plugin Connections");
 				return nodeId;
 				
