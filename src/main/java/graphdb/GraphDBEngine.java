@@ -17,6 +17,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -202,6 +203,171 @@ public class GraphDBEngine {
 	}
 
 	public long addNode(String region, String agent, String plugin)
+	{
+		long nodeId = -1l;
+		
+			if((region != null) && (agent == null) && (plugin == null)) //region node
+			{
+				long regionNodeId = getNodeId(region,null,null);
+				if(regionNodeId == -1)
+				{
+					/*
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+						Node aNode = graphDb.createNode( regionLabel );
+						aNode.setProperty( "regionname", region);
+						
+						nodeId = aNode.getId();
+						tx.success();
+					}
+					*/
+					//Node result = null;
+					QueryResult<Map<String, Object>> result;
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+						//String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
+						//execStr += "RETURN r";
+						String execStr = "MERGE (n:Region {regionname: {\"" + region + "\"}}) RETURN n";
+						result = engine.query(execStr, null);
+						
+						//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
+						Iterator<Map<String, Object>> iterator=result.iterator(); 
+						
+						if(iterator.hasNext()) { 
+						
+						   Map<String,Object> row= iterator.next(); 
+						   Node node  = (Node) row.get("n");
+							
+						   //nodeCount++;
+						   nodeId = node.getId();
+						   //nodeMap.put(nodeHash, nodeId);
+						 }
+						tx.success();
+						return nodeId;
+					}					
+					
+				}
+				
+			}
+			else if((region != null) && (agent != null) && (plugin == null)) //agent node
+			{
+				long regionNodeId = getNodeId(region,null,null);
+				if(regionNodeId == -1)
+				{
+					regionNodeId = addNode(region,null,null);
+				}
+				
+				long agentNodeId = getNodeId(region,agent,null);
+				if(agentNodeId == -1)
+				{
+					/*
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+						Node aNode = graphDb.createNode( agentLabel );
+						aNode.setProperty( "agentname", agent);
+						nodeId = aNode.getId();
+						//addEdge(regionNodeId,nodeId,RelType.isAgent);
+						addEdge(nodeId,regionNodeId,RelType.isAgent);
+						tx.success();
+					}
+					*/
+					QueryResult<Map<String, Object>> result;
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+						//String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
+						//execStr += "RETURN r";
+						String execStr = "MERGE (n:Agent {agentname: {\"" + agent + "\"}}) RETURN n";
+						result = engine.query(execStr, null);
+						
+						//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
+						Iterator<Map<String, Object>> iterator=result.iterator(); 
+						
+						if(iterator.hasNext()) { 
+						
+						   Map<String,Object> row= iterator.next(); 
+						   Node node  = (Node) row.get("n");
+							
+						   //nodeCount++;
+						   nodeId = node.getId();
+						   //nodeMap.put(nodeHash, nodeId);
+						 }
+						tx.success();
+						
+					}
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+						addEdge(nodeId,regionNodeId,RelType.isAgent);
+						tx.success();
+					}
+					return nodeId;
+					
+				}
+			}
+			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
+			{
+				long regionNodeId = getNodeId(region,null,null);
+				if(regionNodeId == -1)
+				{
+					regionNodeId = addNode(region,null,null);
+				}
+				
+				long agentNodeId = getNodeId(region,agent,null);
+				if(agentNodeId == -1)
+				{
+					agentNodeId = addNode(region,agent,null);
+				}
+				
+				long pluginNodeId = getNodeId(region,agent,plugin);
+				if(pluginNodeId == -1)
+				{
+					/*
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+					Node aNode = graphDb.createNode( pluginLabel );
+					aNode.setProperty( "pluginname", plugin);
+					nodeId = aNode.getId();
+					addEdge(nodeId,agentNodeId,RelType.isPlugin);
+					tx.success();
+					}
+					*/
+					QueryResult<Map<String, Object>> result;
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+						//String execStr = "MATCH (r:Region { regionname:\"" + region + "\" })";
+						//execStr += "RETURN r";
+						String execStr = "MERGE (n:Plugin {pluginname: {\"" + plugin + "\"}}) RETURN n";
+						result = engine.query(execStr, null);
+						
+						//result = engine.execute( "match (n {regionname: '" + region + "'}) return n" );	
+						Iterator<Map<String, Object>> iterator=result.iterator(); 
+						
+						if(iterator.hasNext()) { 
+						
+						   Map<String,Object> row= iterator.next(); 
+						   Node node  = (Node) row.get("r");
+							
+						   //nodeCount++;
+						   nodeId = node.getId();
+						   //nodeMap.put(nodeHash, nodeId);
+						 }
+						tx.success();
+					}
+					try ( Transaction tx = graphDb.beginTx() )
+					{
+					addEdge(nodeId,agentNodeId,RelType.isPlugin);
+					tx.success();
+					}
+					return nodeId;
+				}
+				
+			}
+			
+		return nodeId;
+		
+	}
+	
+	
+	public long addNode2(String region, String agent, String plugin)
 	{
 		long nodeId = -1l;
 		
