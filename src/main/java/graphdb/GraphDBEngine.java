@@ -202,7 +202,7 @@ public class GraphDBEngine {
 		return nodeId;
 	}
 
-	public long addNode(String region, String agent, String plugin)
+	public long addNode1(String region, String agent, String plugin)
 	{
 		long nodeId = -1l;
 		
@@ -367,8 +367,9 @@ public class GraphDBEngine {
 	}
 	
 	
-	public long addNode2(String region, String agent, String plugin)
+	public long addNode(String region, String agent, String plugin)
 	{
+		System.out.println("AddNode: " + region + "," + agent + "," + plugin);
 		long nodeId = -1l;
 		
 			if((region != null) && (agent == null) && (plugin == null)) //region node
@@ -404,9 +405,10 @@ public class GraphDBEngine {
 						aNode.setProperty( "agentname", agent);
 						nodeId = aNode.getId();
 						//addEdge(regionNodeId,nodeId,RelType.isAgent);
-						addEdge(nodeId,regionNodeId,RelType.isAgent);
 						tx.success();
 					}
+					addEdge(nodeId,regionNodeId,RelType.isAgent);
+					return nodeId;
 				}
 			}
 			else if((region != null) && (agent != null) && (plugin != null)) //plugin node
@@ -431,9 +433,10 @@ public class GraphDBEngine {
 					Node aNode = graphDb.createNode( pluginLabel );
 					aNode.setProperty( "pluginname", plugin);
 					nodeId = aNode.getId();
-					addEdge(nodeId,agentNodeId,RelType.isPlugin);
 					tx.success();
 					}
+					addEdge(nodeId,agentNodeId,RelType.isPlugin);
+					return nodeId;
 				}
 				
 			}
