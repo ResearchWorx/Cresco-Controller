@@ -73,6 +73,8 @@ public class webREST {
 	    	}
 	    	
 	        //getmsg
+	    	//controllercmd
+	    	
 	    	if(me.getParam("cmd") != null)
 	    	{
 	    		if(me.getParam("cmd").equals("getmsg"))
@@ -88,8 +90,21 @@ public class webREST {
 		    			
 	    		}
 	    	}
+	    	
+	    	if(me.getParam("controllercmd") != null)
+	    	{
+	    			System.out.println("Controller : webREST : Incoming");
+		    		System.out.println("MsgType=" + me.getMsgType().toString());
+		    		System.out.println("Region=" + me.getMsgRegion() + " Agent=" + me.getMsgAgent() + " plugin=" + me.getMsgPlugin());
+		    		System.out.println("params=" + me.getParamsString());
+		    		//CODY
+		    	
+	    	}
+	    	
+	    	
 	    	try
 	    	{
+	    		//System.out.println("Incoming message: " + me.getParamsString());
 	    		MsgEvent ce = ControllerEngine.commandExec.cmdExec(me);
 	    		String returnString = null;
 				

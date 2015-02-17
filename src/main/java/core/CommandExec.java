@@ -50,20 +50,24 @@ public class CommandExec {
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
 							plugin = ce.getParam("src_plugin");
+							System.out.println("CommandExec : addNode() Adding Plugin: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
 							ControllerEngine.gdb.addNode(region, agent,plugin);
 						}
 						else if((ce.getParam("src_region") != null) && (ce.getParam("src_agent") != null) && (ce.getParam("src_plugin") == null))
 						{
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
+							System.out.println("CommandExec : addNode() Adding Plugin: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
+							
 							ControllerEngine.gdb.addNode(region, agent,null);
 						}
 						
-						System.out.println("addNode region=" + region + " agent=" + agent + " plugin" + plugin);
+						//System.out.println("addNode region=" + region + " agent=" + agent + " plugin" + plugin);
 						
 						ce.setMsgBody("nodeadded");
 						return ce;
 					}
+					
 					else if(ce.getParam("controllercmd").equals("setparams"))
 					{
 						//add node
@@ -78,16 +82,44 @@ public class CommandExec {
 							plugin = ce.getParam("src_plugin");
 							//add for plugin
 							//ControllerEngine.gdb.addNode(region, agent,plugin);
-							ControllerEngine.gdb.setNodeParam(region, agent, plugin, "configparams", ce.getParam("configparams"));
+							int timeout = 0;
+							//this to to avoid problem related to runcase
+							while((ControllerEngine.gdb.getNodeId(region, agent, plugin) == -1) && (timeout < 5))
+							{
+								try {
+									Thread.sleep(1000);
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							if(ControllerEngine.gdb.getNodeId(region, agent, plugin) != -1)
+							{
+								ControllerEngine.gdb.setNodeParam(region, agent, plugin, "configparams", ce.getParam("configparams"));
+							}
+							
 						}
 						else if((ce.getParam("src_region") != null) && (ce.getParam("src_agent") != null) && (ce.getParam("src_plugin") == null))
 						{
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
 							//ControllerEngine.gdb.addNode(region, agent,null);
-							ControllerEngine.gdb.setNodeParam(region, agent, null, "configparams", ce.getParam("configparams"));
+							int timeout = 0;
+							//this to to avoid problem related to runcase
+							while((ControllerEngine.gdb.getNodeId(region, agent, null) == -1) && (timeout < 5))
+							{
+								try {
+									Thread.sleep(1000);
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							if(ControllerEngine.gdb.getNodeId(region, agent, null) != -1)
+							{
+								ControllerEngine.gdb.setNodeParam(region, agent, null, "configparams", ce.getParam("configparams"));
+							}
 							//add for agent
-							
 						}
 						
 						System.out.println("setParams region=" + region + " agent=" + agent + " plugin" + plugin);
@@ -95,6 +127,7 @@ public class CommandExec {
 						ce.setMsgBody("paramsadded");
 						return ce;
 					}
+					
 					else if(ce.getParam("controllercmd").equals("removenode"))
 					{
 						String region = null;

@@ -269,7 +269,7 @@ public class GraphDBEngine {
 				    userNode = usersIndex.get( "pathname", pathname ).getSingle();
 				    if ( userNode == null )
 				    {
-				    	System.out.println("Adding Plugin: " + plugin);
+				    	System.out.println("GraphDBEngine : addNode() Adding Plugin: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
 						userNode = graphDb.createNode( pluginLabel );
 				        usersIndex.add( userNode, "pathname", pathname );
 				        userNode.setProperty( "pluginname", plugin);
@@ -380,7 +380,12 @@ public class GraphDBEngine {
 		long nodeId = getNodeId(region,agent,plugin);
 		if(nodeId == -1)
 		{
-			nodeId = addNode(region,agent,plugin);
+			
+			//nodeId = addNode(region,agent,plugin);
+			//CODY
+			//System.out.println("GraphDBEngine : updatePerf + addNode() Adding Plugin: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
+			System.out.println("GraphDBEngine : updatePerf : Tried to updatePerf before Node was created:" + region + " Agent:" + agent + " Plugin:" + plugin);	
+			return false;
 		}
 		long relId = getEdgeId(nodeId,appNodeId,RelType.isConnected);
 		if(relId == -1)
