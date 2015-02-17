@@ -621,7 +621,6 @@ public class GraphDBEngine {
 	
 	private void deleteNodesAndRelationships(long nodeId) {
 	
-		nodeMap.clear(); //clear cache on removal of anything
 		try ( Transaction tx = graphDb.beginTx() )
 		{
 		String query = "START n=node(" + nodeId + ") OPTIONAL MATCH n-[r]-() DELETE r, n;";
@@ -630,7 +629,23 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
-			System.out.println("Unable to delete nodes and relations ! " + ex.toString());
+			System.out.println("Unable to delete nodes and relations : Try 1 : ! " + ex.toString());
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+			String query = "START n=node(" + nodeId + ") OPTIONAL MATCH n-[r]-() DELETE r, n;";
+			QueryResult<Map<String, Object>> result = engine.query(query, null);
+			tx.success();
+			}
+			catch(Exception ex2)
+			{
+				System.out.println("Unable to delete nodes and relations : Try 2 Falure: ! " + ex.toString());
+			}
 		}
 	}
 	
