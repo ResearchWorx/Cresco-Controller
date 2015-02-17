@@ -3,6 +3,7 @@ package core;
 import graphdb.GraphDBEngine;
 import httpserv.httpServerEngineExternal;
 import httpserv.httpServerEngineInternal;
+import httpserv.httpServerEnginePerf;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -47,6 +48,11 @@ public class ControllerEngine {
 			httpServerEngineExternal httpEngineExternal = new httpServerEngineExternal();
 			Thread httpServerThreadExternal = new Thread(httpEngineExternal);
 	    	httpServerThreadExternal.start();
+	    	
+	    	System.out.println("Starting HTTPPerf Service");
+			httpServerEnginePerf httpEnginePerf = new httpServerEnginePerf();
+			Thread httpServerThreadPerf = new Thread(httpEnginePerf);
+	    	httpServerThreadPerf.start();
 	    	
 	    	//
 	    	/*
