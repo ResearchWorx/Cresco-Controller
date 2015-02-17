@@ -621,32 +621,34 @@ public class GraphDBEngine {
 	
 	private void deleteNodesAndRelationships(long nodeId) {
 	
-		try ( Transaction tx = graphDb.beginTx() )
+		boolean complete = false;
+		int timeout = 0;
+		while(!complete && (timeout < 5))
 		{
-		String query = "START n=node(" + nodeId + ") OPTIONAL MATCH n-[r]-() DELETE r, n;";
-		QueryResult<Map<String, Object>> result = engine.query(query, null);
-		tx.success();
-		}
-		catch(Exception ex)
-		{
-			System.out.println("Unable to delete nodes and relations : Try 1 : ! " + ex.toString());
+			try ( Transaction tx = graphDb.beginTx() )
+			{
+				String query = "START n=node(" + nodeId + ") OPTIONAL MATCH n-[r]-() DELETE r, n;";
+				QueryResult<Map<String, Object>> result = engine.query(query, null);
+				tx.success();
+				complete = true;
+				return;
+			}
+			catch(Exception ex)
+			{
+				System.out.println("Unable to delete nodes and relations : Try "+ timeout + " : ! " + ex.toString());
+			}
+			
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			try ( Transaction tx = graphDb.beginTx() )
-			{
-			String query = "START n=node(" + nodeId + ") OPTIONAL MATCH n-[r]-() DELETE r, n;";
-			QueryResult<Map<String, Object>> result = engine.query(query, null);
-			tx.success();
-			}
-			catch(Exception ex2)
-			{
-				System.out.println("Unable to delete nodes and relations : Try 2 Falure: ! " + ex.toString());
-			}
+			
+			
 		}
+		System.out.println("Unable to delete nodes and relations : failure timeout ");
+		
 	}
 	
 	private static enum RelType implements RelationshipType
