@@ -53,12 +53,12 @@ import java.net.UnknownHostException;
 import java.util.Enumeration;
 
 
-public class httpServerEngine implements Runnable{
+public class httpServerEngineInternal implements Runnable{
 
 	
 	public static String ipAddress;
 	
-	public httpServerEngine() throws IOException, InterruptedException
+	public httpServerEngineInternal() throws IOException, InterruptedException
 	{
 	
 	}
@@ -153,6 +153,7 @@ public class httpServerEngine implements Runnable{
         //URI baseUri = UriBuilder.fromUri("http://localhost/").port(9998).build();
         URI baseUri = getBaseURI();
         ResourceConfig config = new ResourceConfig(webREST.class);
+        
         //config.register(webGUI.class);
         HttpServer server = GrizzlyHttpServerFactory.createHttpServer(baseUri, config);
         //return GrizzlyServerFactory.createHttpServer(BASE_URI);

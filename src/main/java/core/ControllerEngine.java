@@ -1,7 +1,7 @@
 package core;
 
 import graphdb.GraphDBEngine;
-import httpserv.httpServerEngine;
+import httpserv.httpServerEngineInternal;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -38,7 +38,7 @@ public class ControllerEngine {
 		try
     	{
     		System.out.println("Starting HTTP Service");
-			httpServerEngine httpEngine = new httpServerEngine();
+			httpServerEngineInternal httpEngine = new httpServerEngineInternal();
 			Thread httpServerThread = new Thread(httpEngine);
 	    	httpServerThread.start();
 	    	
