@@ -372,11 +372,6 @@ public class GraphDBEngine {
 	{
 	 try
    	 { 
-		long appNodeId = getAppNodeId(application);
-		if(appNodeId == -1)
-		{
-			appNodeId = addAppNode(application);
-		}
 		long nodeId = getNodeId(region,agent,plugin);
 		if(nodeId == -1)
 		{
@@ -386,6 +381,11 @@ public class GraphDBEngine {
 			//System.out.println("GraphDBEngine : updatePerf + addNode() Adding Plugin: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
 			System.out.println("GraphDBEngine : updatePerf : Tried to updatePerf before Node was created:" + region + " Agent:" + agent + " Plugin:" + plugin);	
 			return false;
+		}
+		long appNodeId = getAppNodeId(application);
+		if(appNodeId == -1)
+		{
+			appNodeId = addAppNode(application);
 		}
 		long relId = getEdgeId(nodeId,appNodeId,RelType.isConnected);
 		if(relId == -1)
