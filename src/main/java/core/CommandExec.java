@@ -29,8 +29,15 @@ public class CommandExec {
 							String agent = null;
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
-							ControllerEngine.gdb.addNode(region, agent,null);
-							System.out.println("registered Node region=" + region + " agent=" + agent);		
+							String node_id = ControllerEngine.gdb.addNode(region, agent,null);
+							if(node_id != null)
+							{
+								System.out.println("SUCCESS: registered Node region=" + region + " agent=" + agent);		
+							}
+							else
+							{
+								System.out.println("FAILED: registered Node region=" + region + " agent=" + agent);	
+							}
 							return ce;
 				    	}
 						else
@@ -50,16 +57,30 @@ public class CommandExec {
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
 							plugin = ce.getParam("src_plugin");
-							System.out.println("CommandExec : addNode() Adding Plugin: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
-							ControllerEngine.gdb.addNode(region, agent,plugin);
+							String node_id = ControllerEngine.gdb.addNode(region, agent,plugin);
+							if(node_id != null)
+							{
+								System.out.println("CommandExec : addNode() SUCCESS: Adding pNode: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);	
+							}
+							else
+							{
+								System.out.println("CommandExec : addNode() FAILED: Adding pNode: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
+							}
 						}
 						else if((ce.getParam("src_region") != null) && (ce.getParam("src_agent") != null) && (ce.getParam("src_plugin") == null))
 						{
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
-							System.out.println("CommandExec : addNode() Adding Plugin: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
 							
-							ControllerEngine.gdb.addNode(region, agent,null);
+							String node_id = ControllerEngine.gdb.addNode(region, agent, null);
+							if(node_id != null)
+							{
+								System.out.println("CommandExec : addNode() SUCCESS: Adding aNode: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);	
+							}
+							else
+							{
+								System.out.println("CommandExec : addNode() FAILED: Adding aNode: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
+							}
 						}
 						
 						//System.out.println("addNode region=" + region + " agent=" + agent + " plugin" + plugin);
@@ -84,16 +105,18 @@ public class CommandExec {
 							//ControllerEngine.gdb.addNode(region, agent,plugin);
 							int timeout = 0;
 							//this to to avoid problem related to runcase
-							while((ControllerEngine.gdb.getNodeId(region, agent, plugin) == -1) && (timeout < 5))
+							while((ControllerEngine.gdb.getNodeId(region, agent, plugin) == null) && (timeout < 5))
 							{
 								try {
 									Thread.sleep(1000);
+									System.out.println("CommandExec : setParams() Wait on Node Create: Region:" + region + " Agent:" + agent + " Plugin:" + plugin);
+									
 								} catch (InterruptedException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
 							}
-							if(ControllerEngine.gdb.getNodeId(region, agent, plugin) != -1)
+							if(ControllerEngine.gdb.getNodeId(region, agent, plugin) != null)
 							{
 								ControllerEngine.gdb.setNodeParam(region, agent, plugin, "configparams", ce.getParam("configparams"));
 							}
@@ -106,7 +129,7 @@ public class CommandExec {
 							//ControllerEngine.gdb.addNode(region, agent,null);
 							int timeout = 0;
 							//this to to avoid problem related to runcase
-							while((ControllerEngine.gdb.getNodeId(region, agent, null) == -1) && (timeout < 5))
+							while((ControllerEngine.gdb.getNodeId(region, agent, null) == null) && (timeout < 5))
 							{
 								try {
 									Thread.sleep(1000);
@@ -115,7 +138,7 @@ public class CommandExec {
 									e.printStackTrace();
 								}
 							}
-							if(ControllerEngine.gdb.getNodeId(region, agent, null) != -1)
+							if(ControllerEngine.gdb.getNodeId(region, agent, null) != null)
 							{
 								ControllerEngine.gdb.setNodeParam(region, agent, null, "configparams", ce.getParam("configparams"));
 							}

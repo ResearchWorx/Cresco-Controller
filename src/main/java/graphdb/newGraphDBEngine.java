@@ -1,15 +1,19 @@
 package graphdb;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.orientechnologies.orient.core.metadata.schema.OSchema;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -19,15 +23,15 @@ import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import com.tinkerpop.blueprints.impls.orient.OrientGraphFactory;
 import com.tinkerpop.blueprints.impls.orient.OrientGraphNoTx;
 
-public class GraphDBEngine {
+public class newGraphDBEngine {
 
 	private OrientGraphFactory factory;
 	private OrientGraph odb;
 	public Cache<String, String> pathCache;
 	public Cache<String, Edge> appPathCache;
-	private List<String> inProcessPaths;
 	
-	public GraphDBEngine()
+	
+	public newGraphDBEngine()
 	{
 		pathCache = CacheBuilder.newBuilder()
 			    .concurrencyLevel(4)
@@ -42,14 +46,13 @@ public class GraphDBEngine {
 			    .maximumSize(100000)
 			    .expireAfterWrite(15, TimeUnit.MINUTES)
 			    .build();
-		inProcessPaths = new ArrayList<String>();
 		
 		//String connection_string = "remote:" + Launcher.conf.getGraphDBServer() + "/" + Launcher.conf.getGraphDBName();
 		//String username = Launcher.conf.getGraphDBLogin();
 		//String password = Launcher.conf.getGraphDBPassword();
 		String connection_string = "remote:" + "127.0.0.1" + "/" + "cresco";
-		String username = "root";
-		String password = "cody01";
+		String username = "cresco";
+		String password = "u$cresco01";
 		System.out.println(connection_string);
 		System.out.println(username);
 		System.out.println(password);
@@ -159,7 +162,6 @@ public class GraphDBEngine {
 		
 		try
 		{
-			
 			Vertex Application = odb.getVertexByKey("Application.application_name", application_name);
 			if(Application != null)
 			{
@@ -177,21 +179,12 @@ public class GraphDBEngine {
 
 	public String getNodeId(String region, String agent, String plugin)
 	{
+		
 		try
 		{
 			String pathname = region + "," + agent + "," + plugin;
-			while(inProcessPaths.contains(pathname))
-			{
-				System.out.println("getNodeId: inProcessPaths: Sleeping....");
-				Thread.sleep(1000);
-			}
-			String node_id =	pathCache.getIfPresent(pathname);
-			
-			if(node_id != null)
-			{
-				return node_id;
-			}	
-			else
+			String node_id = pathCache.getIfPresent(pathname);
+			if(node_id == null)
 			{
 				//check region
 				if((region != null) && (agent == null) && (plugin == null))
@@ -203,7 +196,6 @@ public class GraphDBEngine {
 						pathCache.put(pathname, node_id);
 						return node_id;
 					}
-					
 				}
 				//check agent
 				else if((region != null) && (agent != null) && (plugin == null))
@@ -260,10 +252,7 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
-			//System.out.println("getNodeId: Error:" + ex.toString());
-			long threadId = Thread.currentThread().getId();
-			System.out.println("getNodeId: thread_id: " + threadId + " Error:" + ex.toString());
-			
+			System.out.println("getNodeId: Error " + ex.toString());
 		}
 		return null;
 		
@@ -279,53 +268,31 @@ public class GraphDBEngine {
 			
 			if(node_id != null)
 			{
-				System.out.println("Tried to add duplicate Cached Node Path: " + pathname + " node_id:" + node_id);
-				return node_id; 
+				System.out.println("Tried to add duplicate Node Path: " + pathname);
 			}
-			
-			node_id = getNodeId(region,agent,plugin);
-			if(node_id != null)
-			{
-				System.out.println("Tried to add duplicate Node : " + pathname + " node_id:" + node_id);
-				return node_id; 
-			}
-			
-			if(node_id == null)
+			else
 			{
 				//check region
 				if((region != null) && (agent == null) && (plugin == null))
 				{
-					inProcessPaths.add(pathname); //block until added
-					
 					node_id = UUID.randomUUID().toString();
+					
 					Vertex rNode = odb.addVertex("class:rNode");
 					rNode.setProperty("node_id", node_id);
 					rNode.setProperty("node_name", region);
 					odb.commit();
-					//check that node can be fetched
-					rNode = odb.getVertexByKey("rNode.node_name", region);
-					//block add request
-					while(rNode == null)
-					{
-						rNode = odb.getVertexByKey("rNode.node_name", region);
-						System.out.println("Verifying rNode_id:" + node_id + " ....");
-					}
 					pathCache.put(pathname, node_id);
-					inProcessPaths.remove(pathname);
 					return node_id;
 					
 				}
 				//check agent
 				else if((region != null) && (agent != null) && (plugin == null))
 				{
-					inProcessPaths.add(pathname); //block until added
-					
 					Vertex rNode = odb.getVertexByKey("rNode.node_name", region);
 					if(rNode == null)
 					{
 						String rNode_id = addNode(region,null,null);
 						rNode = odb.getVertexByKey("rNode.node_id", rNode_id);
-						//return null;
 					}
 					
 					node_id = UUID.randomUUID().toString();
@@ -334,50 +301,27 @@ public class GraphDBEngine {
 					aNode.setProperty("node_name", agent);
 					Edge isAgent = odb.addEdge(null, aNode, rNode, "isAgent");
 					odb.commit();
-					aNode = odb.getVertexByKey("aNode.node_id", node_id);
-					//block add request
-					while(aNode == null)
-					{
-						aNode = odb.getVertexByKey("aNode.node_id", node_id);
-						System.out.println("Verifying aNode_id:" + node_id + " ....");
-					}
 					pathCache.put(pathname, node_id);
-					inProcessPaths.remove(pathname); //block until added
 					return node_id;
 					
 				}
 				//check plugin
 				else if((region != null) && (agent != null) && (plugin != null))
 				{
-					inProcessPaths.add(pathname); //block until added
-					
 					String aNode_id = getNodeId(region,agent,null);
-					
-					Vertex aNode = aNode = odb.getVertexByKey("aNode.node_id", aNode_id);
-					
-					if(aNode == null)
+					Vertex aNode = null;
+					if(aNode_id == null)
 					{
 						aNode_id = addNode(region,agent,null);
 						aNode = odb.getVertexByKey("aNode.node_id", aNode_id);
 					}
-					
 					node_id = UUID.randomUUID().toString();
 					Vertex pNode = odb.addVertex("class:pNode");
-					
-					pNode.setProperty("node_id", node_id);
-					pNode.setProperty("node_name", plugin);
+					aNode.setProperty("node_id", node_id);
+					aNode.setProperty("node_name", plugin);
 					Edge isPlugin = odb.addEdge(null, pNode, aNode, "isPlugin");
 					odb.commit();
-					pNode = odb.getVertexByKey("pNode.node_id", node_id);
-					//block add request
-					while(pNode == null)
-					{
-						pNode = odb.getVertexByKey("pNode.node_id", node_id);
-						System.out.println("Verifying pNode_id:" + node_id + " ....");
-					}
-					
 					pathCache.put(pathname, node_id);
-					inProcessPaths.remove(pathname); //block until added
 					return node_id;
 					
 				}
@@ -386,8 +330,7 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
-			long threadId = Thread.currentThread().getId();
-			System.out.println("addNode: thread_id: " + threadId + " Error " + ex.toString());
+			System.out.println("getNodeId: Error " + ex.toString());
 		}
 		return null;
 		
