@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.orientechnologies.orient.core.metadata.schema.OSchema;
+import com.orientechnologies.orient.core.tx.OTransaction.TXTYPE;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Parameter;
@@ -22,15 +23,20 @@ public class GraphDBEngine {
 
 	private OrientGraphFactory factory;
 	private OrientGraph odb;
-	public Cache<String, String> pathCache;
+	public Cache<String, String> nodePathCache;
 	public Cache<String, Edge> appPathCache;
-	public Map<String, Long> inProcessPath;
+	
+	//public Cache<String, Edge> appPathCache;
+	
+	public Map<String, Long> inProcessNode;
+	public Map<String, Long> inProcessEdge;
+	
 	
 	//private List<String> inProcessPaths;
 	
 	public GraphDBEngine()
 	{
-		pathCache = CacheBuilder.newBuilder()
+		nodePathCache = CacheBuilder.newBuilder()
 			    .concurrencyLevel(4)
 			    .softValues()
 			    .maximumSize(100000)
@@ -44,7 +50,9 @@ public class GraphDBEngine {
 			    .expireAfterWrite(15, TimeUnit.MINUTES)
 			    .build();
 		
-		inProcessPath = new ConcurrentHashMap<String,Long>();
+		inProcessNode = new ConcurrentHashMap<String,Long>();
+		inProcessEdge  = new ConcurrentHashMap<String,Long>();
+		
 		
 		//inProcessPaths = new ArrayList<String>();
 		
@@ -179,14 +187,16 @@ public class GraphDBEngine {
         txGraph.commit();
         txGraph.shutdown();
     }
-	Boolean addEdge(Vertex fromV, Vertex toV, String label, String className) 
+	Boolean addEdge(Vertex fromV, Vertex toV, String className) 
 	{
 		//Vertex rNode = odb.addVertex("class:rNode");
 		
 		try
 		{
-			Edge isEdge = odb.addEdge("class:" + className, fromV, toV, label);
+			odb.begin();
+			Edge isEdge = odb.addEdge("class:" + className, fromV, toV, className);
 			odb.commit();
+			return true;
 			
 		}
 		catch(Exception ex)
@@ -194,37 +204,16 @@ public class GraphDBEngine {
 			System.out.println("addEdge Error: " + ex.toString());
 		}
 		return false;
-		/*
-		try
-		{
-			OrientGraphNoTx txGraph = factory.getNoTx();
-			OSchema schema = ((OrientGraphNoTx)txGraph).getRawGraph().getMetadata().getSchema();
-        
-			Edge isEdge = txGraph.addEdge(null, fromV, toV, label);
-    	
-			txGraph.commit();
-			txGraph.shutdown();
-			return true;
-		}
-		catch(Exception ex)
-		{
-			System.out.println("addEdge Error: " + ex.toString());
-		}
-		return false;
-		*/
-		return true;
+		
     }
-	//Edge isAgent = odb.addEdge(null, aNode, rNode, "isAgent");
-	
-	
 	//end DB
 	
 	public String addAppNode(String application_name)
 	{
 		try
 		{
+			odb.begin();
 			String application_id = UUID.randomUUID().toString();
-			
 			Vertex Application = odb.addVertex("class:Application");
 			Application.setProperty("application_id", application_id);
 			Application.setProperty("application_name", application_name);
@@ -238,7 +227,6 @@ public class GraphDBEngine {
 		return null;
 		
 	}
-	
 	public String getAppNodeId(String application_name)
 	{
 		
@@ -269,13 +257,17 @@ public class GraphDBEngine {
 		try
 		{
 			String pathname = getPathname(region,agent,plugin);
-			while(inProcessPath.containsKey(pathname))
+			/*
+			while(inProcessNode.containsKey(pathname))
 			{
-				System.out.println("getNodeId: inProcessPaths: Sleeping....");
+				System.out.println("getNodeId: inProcessPaths: "+ pathname + " Sleeping....");
 				Thread.sleep(1000);
 			}
-			String node_id = pathCache.getIfPresent(pathname);
+			*/
 			
+			//String node_id = nodePathCache.getIfPresent(pathname);
+			
+			String node_id = null;
 			if(node_id != null)
 			{
 				return node_id;
@@ -285,11 +277,13 @@ public class GraphDBEngine {
 				//check region
 				if((region != null) && (agent == null) && (plugin == null))
 				{
+					System.out.println("getnodeid Region " + region);
 					Vertex rNode = odb.getVertexByKey("rNode.node_name", region);
 					if(rNode != null)
 					{
 						node_id = rNode.getProperty("node_id");
-						pathCache.put(pathname, node_id);
+						//nodePathCache.put(pathname, node_id);
+						System.out.println("getnodeid Region " + region + " " + node_id);
 						return node_id;
 					}
 					
@@ -297,6 +291,8 @@ public class GraphDBEngine {
 				//check agent
 				else if((region != null) && (agent != null) && (plugin == null))
 				{
+					System.out.println("getnodeid agent " + agent);
+					
 					Vertex rNode = odb.getVertexByKey("rNode.node_name", region);
 					if(rNode != null)
 					{
@@ -311,7 +307,9 @@ public class GraphDBEngine {
 							if(aNode_name.equals(agent))
 							{
 								node_id = aNode.getProperty("node_id");
-								pathCache.put(pathname, node_id);
+								//nodePathCache.put(pathname, node_id);
+								System.out.println("getnodeid agent " + agent + " " + node_id);
+								
 								return node_id;
 							}
 							
@@ -321,12 +319,19 @@ public class GraphDBEngine {
 				//check plugin
 				else if((region != null) && (agent != null) && (plugin != null))
 				{
+					System.out.println("getnodeid plugin " + plugin);
+					
 					String aNode_id = getNodeId(region,agent,null);
+					
 					if(aNode_id != null)
 					{
+						System.out.println("getnodeid plugin " + plugin + " got agentid:" + aNode_id);
+						
 						Vertex aNode = odb.getVertexByKey("aNode.node_id", aNode_id);
 						if(aNode != null)
 						{
+							System.out.println("getnodeid plugin " + plugin + " got agent");
+							
 							Iterable<Edge> agentEdges = aNode.getEdges(Direction.IN, "isPlugin");
 							Iterator<Edge> iter = agentEdges.iterator();
 							while (iter.hasNext())
@@ -334,10 +339,14 @@ public class GraphDBEngine {
 								Edge isPlugin = iter.next();
 								Vertex pNode = isPlugin.getVertex(Direction.OUT);
 								String pNode_name = pNode.getProperty("node_name");
-								if(pNode_name.equals("plugin"))
+								System.out.println("getnodeid plugin " + plugin + " got plugin_name:" + pNode_name);
+								
+								if(pNode_name.equals(plugin))
 								{
 									node_id = aNode.getProperty("node_id");
-									pathCache.put(pathname, node_id);
+									//nodePathCache.put(pathname, node_id);
+									System.out.println("getnodeid plugin " + plugin + " " + node_id);
+									
 									return node_id;
 								}
 							}
@@ -364,7 +373,15 @@ public class GraphDBEngine {
 		try
 		{
 			String pathname = getPathname(region,agent,plugin);
-						
+			
+			/*
+			while(inProcessNode.containsKey(pathname))
+			{
+				System.out.println("getNodeId: inProcessPaths: "+ pathname + " Sleeping....");
+				Thread.sleep(1000);
+			}
+			*/
+			
 			String node_id = getNodeId(region,agent,plugin);
 			if(node_id != null)
 			{
@@ -377,9 +394,11 @@ public class GraphDBEngine {
 				//check region
 				if((region != null) && (agent == null) && (plugin == null))
 				{
+					odb.begin();
+					
 					node_id = UUID.randomUUID().toString();
 					
-					inProcessPath.put(pathname, System.currentTimeMillis()); //block until added
+					inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 					
 					Vertex rNode = odb.addVertex("class:rNode");
 					rNode.setProperty("node_id", node_id);
@@ -393,16 +412,18 @@ public class GraphDBEngine {
 						rNode = odb.getVertexByKey("rNode.node_name", region);
 						System.out.println("Verifying rNode_id:" + node_id + " ....");
 					}
-					pathCache.put(pathname, node_id);
-					inProcessPath.remove(pathname);
+					//nodePathCache.put(pathname, node_id);
+					inProcessNode.remove(pathname);
 					return node_id;
 					
 				}
 				//check agent
 				else if((region != null) && (agent != null) && (plugin == null))
 				{
+					odb.begin();
+					
 					node_id = UUID.randomUUID().toString();
-					inProcessPath.put(pathname, System.currentTimeMillis()); //block until added
+					inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 					
 					Vertex rNode = odb.getVertexByKey("rNode.node_name", region);
 					if(rNode == null)
@@ -429,16 +450,18 @@ public class GraphDBEngine {
 						aNode = odb.getVertexByKey("aNode.node_id", node_id);
 						System.out.println("Verifying aNode_id:" + node_id + " ....");
 					}
-					pathCache.put(pathname, node_id);
-					inProcessPath.remove(pathname); //block until added
+					//nodePathCache.put(pathname, node_id);
+					inProcessNode.remove(pathname); //block until added
 					return node_id;
 					
 				}
 				//check plugin
 				else if((region != null) && (agent != null) && (plugin != null))
 				{
+					odb.begin();
+					
 					node_id = UUID.randomUUID().toString();
-					inProcessPath.put(pathname, System.currentTimeMillis()); //block until added
+					inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 					
 					String aNode_id = getNodeId(region,agent,null);
 					
@@ -469,8 +492,8 @@ public class GraphDBEngine {
 						System.out.println("Verifying pNode_id:" + node_id + " ....");
 					}
 					
-					pathCache.put(pathname, node_id);
-					inProcessPath.remove(pathname); //block until added
+					//nodePathCache.put(pathname, node_id);
+					inProcessNode.remove(pathname); //block until added
 					return node_id;
 					
 				}
@@ -572,12 +595,12 @@ public class GraphDBEngine {
 	{
 		try
 		{
-			
+			odb.begin();
 			String node_id = getNodeId(region,agent,plugin);
 			if(node_id != null)
 			{
 				String pathname = getPathname(region,agent,plugin);
-				inProcessPath.put(pathname, System.currentTimeMillis()); //block until added
+				inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 				
 				Vertex Node = odb.getVertexByKey(getNodeClass(region,agent,plugin) + ".node_id", node_id);
 				if(Node != null)
@@ -589,7 +612,7 @@ public class GraphDBEngine {
 						Node.setProperty( pairs.getKey().toString(), pairs.getValue().toString());
 					}
 					odb.commit();
-					inProcessPath.remove(pathname);
+					inProcessNode.remove(pathname);
 					return true;
 				}
 			}
@@ -607,18 +630,20 @@ public class GraphDBEngine {
 	{
 		try
 		{
+			odb.begin();
+			
 			String node_id = getNodeId(region,agent,plugin);
 			if(node_id != null)
 			{
 				String pathname = getPathname(region,agent,plugin);
-				inProcessPath.put(pathname, System.currentTimeMillis()); //block until added
+				inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 				
 				Vertex Node = odb.getVertexByKey(getNodeClass(region,agent,plugin) + ".node_id", node_id);
 				if(Node != null)
 				{
 					Node.setProperty(paramKey, paramValue);
 					odb.commit();
-					inProcessPath.remove(pathname);
+					inProcessNode.remove(pathname);
 					return true;
 				}
 			}
@@ -638,10 +663,14 @@ public class GraphDBEngine {
 		{
 			if(edge != null)
 			{
+				odb.begin();
+				
 				for (Map.Entry<String, String> entry : params.entrySet())
 				{
 				    edge.setProperty(entry.getKey(), entry.getValue());
 				}
+				odb.commit();
+			
 				return true;
 			}
 		}
@@ -656,6 +685,8 @@ public class GraphDBEngine {
 	{
 		try
    	 	{ 
+			
+			
 			//precheck input
 			String node_class = getNodeClass(region,agent,plugin);
 			if(node_class == null)
@@ -678,7 +709,6 @@ public class GraphDBEngine {
 				if(updateEdge(appPathEdge,params))
 				{
 					//if edge was updated return true;
-					odb.commit();
 					return true;
 				}
 			}
@@ -749,198 +779,133 @@ public class GraphDBEngine {
 		return false;
 	}
 	
-	public void removeNode(String region, String agent, String plugin)
+	public Boolean removeNode(String region, String agent, String plugin)
 	{
-		/*
-		//clear cache on removal of anything
-		nodeMap.clear();
-		
-		if((region != null) && (agent == null) && (plugin == null)) //region node
+		try
 		{
-			QueryResult<Map<String, Object>> result;
-			ArrayList<Node> nodes = new ArrayList<Node>();
-			ArrayList<String> nodeNames = new ArrayList<String>();
+			String pathname = getPathname(region,agent,plugin);
+			System.out.println("Removing pathname: " + pathname);
+			/*
+			while(inProcessNode.containsKey(pathname))
+			{
+				System.out.println("removeNode: inProcessPaths: " + pathname + " Sleeping....");
+				Thread.sleep(1000);
+			}
+			*/
 			
-			try ( Transaction tx = graphDb.beginTx() )
+			String node_id = getNodeId(region,agent,plugin);
+			
+			//remove from cache
+			nodePathCache.invalidate(pathname);
+			
+			if(node_id == null)
 			{
-				//first remove agents
-				String execStr = "MATCH (r:Region {regionname: \"" + region + "\"})-[l]-(b:Agent) ";
-				execStr += "RETURN b";
-				result = engine.query( execStr,null );
-				Iterator<Map<String, Object>> iterator=result.iterator(); 
-				 if(iterator.hasNext()) { 
-				   Map<String,Object> row= iterator.next(); 
-				   //out.print("Total nodes: " + row.get("total"));
-				   Node node  = (Node) row.get("b");
-				   try{
-				   nodeNames.add(node.getProperty("agentname").toString());
-				   }
-				   catch(Exception ex)
-				   {
-					   System.out.println("WTF! " + ex.toString());
-				   }
-				 }
-			tx.success();
-			}
-			catch(Exception ex)
-			{
-				System.out.println("removeNode : removing Region " + ex.toString());
-			}
-				
-				for(String nodeName : nodeNames)
-				{
-					removeNode(region,nodeName,null);
-				}
-		
-				long regionNodeId = getNodeId(region,null,null);
-				//nodes.add(graphDb.getNodeById(regionNodeId));
-				if(regionNodeId != -1)
-				{
-					deleteNodesAndRelationships(regionNodeId);
-				}
-		}
-		else if((region != null) && (agent != null) && (plugin == null)) //agent node
-		{
-			QueryResult<Map<String, Object>> result;
-			//ArrayList<Node> nodes = new ArrayList<Node>();
-			ArrayList<String> pluginNames = new ArrayList<String>();
-			 			
-			try ( Transaction tx = graphDb.beginTx() )
-			{
-				//first remove plugins
-				String execStr = "MATCH (a:Agent {agentname: \"" + agent + "\"})-[r]-(b:Plugin) ";
-				execStr += "RETURN b";
-				result = engine.query( execStr,null );
-				
-				 Iterator<Map<String, Object>> iterator=result.iterator(); 
-				 if(iterator.hasNext()) 
-				 { 
-					 for (Map<String,Object> row : result) 
-					 {
-						   Node x = (Node)row.get("b");
-						   //for (String prop : x.getPropertyKeys()) {
-						   //   System.out.println(prop +": "+x.getProperty(prop));
-						   //}
-						   pluginNames.add(x.getProperty("pluginname").toString());
-						   
-						}
-				 }
-				 tx.success();
-				 
+				//remove node
+				System.out.println("removeNode: Error: Node Path: " + pathname + " does not exist!");
+				return false;
 			}	
-			catch(Exception ex)
-			{
-				System.out.println("Woops: " + ex.toString());
-			}
-			for(String pluginName : pluginNames)
-			{
-				removeNode(region,agent,pluginName);
-			}
-			
-			long agentNodeId = getNodeId(region,agent,null);
-			deleteNodesAndRelationships(agentNodeId);
-			
-			//if no more nodes exist in region remove region
-			ArrayList<String> nodeNames = new ArrayList<String>();
-			
-			try ( Transaction tx = graphDb.beginTx() )
-			{
-				//first remove agents
-				String execStr = "MATCH (r:Region {regionname: \"" + region + "\"})-[l]-(b:Agent) ";
-				execStr += "RETURN b";
-				result = engine.query( execStr,null );
-				Iterator<Map<String, Object>> iterator=result.iterator(); 
-				 if(iterator.hasNext()) { 
-				   Map<String,Object> row= iterator.next(); 
-				   //out.print("Total nodes: " + row.get("total"));
-				   Node node  = (Node) row.get("b");
-				   try{
-				   nodeNames.add(node.getProperty("agentname").toString());
-				   }
-				   catch(Exception ex)
-				   {
-					   System.out.println("WTF! " + ex.toString());
-				   }
-				 }
-			tx.success();
-			}
-			catch(Exception ex)
-			{
-				System.out.println("removeNode : removing Region " + ex.toString());
-			}
-			if(nodeNames.isEmpty())
-			{
-				removeNode(region,null,null);
-			}
 			else
 			{
-				System.out.println(nodeNames.size());
+				
+				//check region
+				if((region != null) && (agent == null) && (plugin == null))
+				{
+					System.out.println("Removing region: " + region);
+					
+					odb.begin();
+					//remove region
+					Vertex rNode = odb.getVertexByKey("rNode.node_id", node_id);
+					Iterable<Edge> agentEdges = rNode.getEdges(Direction.IN, "isAgent");
+					Iterator<Edge> iter = agentEdges.iterator();
+					while (iter.hasNext())
+					{
+						Edge isAgent = iter.next();
+						Vertex aNode = isAgent.getVertex(Direction.OUT);
+						String agent_name = aNode.getProperty("node_name"); 
+						if(!removeNode(region,agent_name,null))
+						{
+							System.out.println("removeNode: Error: Unable to remove aNode_id:" + aNode.getProperty("node_id")  + " aNode_name:" + aNode.getProperty("node_name"));
+							return false;
+						}
+					}
+					odb.removeVertex(rNode);
+					odb.commit();
+					return true;
+				}
+				//check agent
+				else if((region != null) && (agent != null) && (plugin == null))
+				{
+					System.out.println("Removing agent: " + agent);
+					
+						odb.begin();
+						Vertex aNode = odb.getVertexByKey("aNode.node_id", node_id);
+						if(aNode == null)
+						{
+							System.out.println("Can't remove agent:" + agent + " does no exist");
+							return true;
+						}
+						Iterable<Edge> pluginEdges = aNode.getEdges(Direction.IN, "isPlugin");
+						Iterator<Edge> iter = pluginEdges.iterator();
+						while (iter.hasNext())
+						{
+							Edge isPlugin = iter.next();
+							Vertex pNode = isPlugin.getVertex(Direction.OUT);
+							String plugin_name = pNode.getProperty("node_name"); 
+							if(!removeNode(region,agent,plugin_name))
+							{
+								System.out.println("removeNode: Error: Unable to remove pNode_id:" + pNode.getProperty("node_id")  + " pNode_name:" + pNode.getProperty("node_name"));
+								return false;
+							}
+						}
+						
+						odb.removeVertex(aNode);
+						odb.commit();
+						return true;
+					
+				}
+				//check plugin
+				else if((region != null) && (agent != null) && (plugin != null))
+				{
+					odb.begin();
+					
+					Vertex pNode = odb.getVertexByKey("pNode.node_id", node_id);
+					if(pNode == null)
+					{
+						System.out.println("Can't remove plugin:" + plugin + " does no exist");
+						return true;
+					}
+					
+					for(String propKey : pNode.getPropertyKeys())
+					{
+						if(pNode.getProperty(propKey) !=null)
+						{
+							System.out.println("REMOVING key: " + propKey + " value:" + pNode.getProperty(propKey).toString());
+						}
+						else
+						{
+							System.out.println("REMOVING key: " + propKey);
+							
+						}
+							
+					
+					}
+					odb.removeVertex(pNode);
+					odb.commit();
+					return true;
+				}
 			}
 			
+		}
+		catch(Exception ex)
+		{
+			//System.out.println("getNodeId: Error:" + ex.toString());
+			long threadId = Thread.currentThread().getId();
+			System.out.println("removeNode: thread_id: " + threadId + " Error:" + ex.toString());
 			
 		}
-		else if((region != null) && (agent != null) && (plugin != null)) //plugin node
-		{
-				//simply delete the plugin
-				long pluginNodeId = getNodeId(region,agent,plugin);
-				if(pluginNodeId != -1)
-				{
-					try ( Transaction tx = graphDb.beginTx() )
-					{
-						deleteNodesAndRelationships(pluginNodeId);
-					}
-					catch(Exception ex)
-					{
-						System.out.println("Problem Removing Plugin " + ex.toString());
-					}
-				}
-				else
-				{
-					System.out.println("Can't remove Region=" + region + " Agent=" + agent + " Plugin=" + plugin + " " + " it does not exist");
-				}
-		}
-		*/
+		return null;
+		
 	}
 		
-	private void deleteNodesAndRelationships(long nodeId) 
-	{
-		/*
-		boolean complete = false;
-		int timeout = 0;
-		while(!complete && (timeout < 5))
-		{
-			try ( Transaction tx = graphDb.beginTx() )
-			{
-				String query = "START n=node(" + nodeId + ") OPTIONAL MATCH n-[r]-() DELETE r, n;";
-				QueryResult<Map<String, Object>> result = engine.query(query, null);
-				tx.success();
-				complete = true;
-				return;
-			}
-			catch(Exception ex)
-			{
-				System.out.println("Unable to delete nodes and relations : Try "+ timeout + " : ! " + ex.toString());
-			}
-			
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			
-		}
-		System.out.println("Unable to delete nodes and relations : failure timeout ");
-		*/
-	}
-	
-	/*
-	private static enum RelType implements RelationshipType
-	{
-	    isConnected,isPlugin,isAgent
-	}
-	*/
-	
 
 }

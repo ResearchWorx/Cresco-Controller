@@ -162,16 +162,45 @@ public class CommandExec {
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
 							plugin = ce.getParam("src_plugin");
-							ControllerEngine.gdb.removeNode(region, agent,plugin);
+							if(ControllerEngine.gdb.removeNode(region, agent,plugin))
+							{
+								System.out.println("SUCCESS: removedNode region=" + region + " agent=" + agent + " plugin" + plugin);
+							}
+							else
+							{
+								System.out.println("FAILURE: removedNode region=" + region + " agent=" + agent + " plugin" + plugin);
+							}
+							
 						}
 						else if((ce.getParam("src_region") != null) && (ce.getParam("src_agent") != null) && (ce.getParam("src_plugin") == null))
 						{
 							region = ce.getParam("src_region");
 							agent = ce.getParam("src_agent");
-							ControllerEngine.gdb.removeNode(region, agent,plugin);
+							//ControllerEngine.gdb.removeNode(region, agent,plugin);
+							if(ControllerEngine.gdb.removeNode(region, agent,plugin))
+							{
+								System.out.println("SUCCESS: removedNode region=" + region + " agent=" + agent + " plugin" + plugin);
+							}
+							else
+							{
+								System.out.println("FAILURE: removedNode region=" + region + " agent=" + agent + " plugin" + plugin);
+							}
+						}
+						else if((ce.getParam("src_region") != null) && (ce.getParam("src_agent") == null) && (ce.getParam("src_plugin") == null))
+						{
+							region = ce.getParam("src_region");
+							//agent = ce.getParam("src_agent");
+							//ControllerEngine.gdb.removeNode(region, agent,plugin);
+							if(ControllerEngine.gdb.removeNode(region, agent,plugin))
+							{
+								System.out.println("SUCCESS: removedNode region=" + region + " agent=" + agent + " plugin" + plugin);
+							}
+							else
+							{
+								System.out.println("FAILURE: removedNode region=" + region + " agent=" + agent + " plugin" + plugin);
+							}
 						}
 						
-						System.out.println("removedNode region=" + region + " agent=" + agent + " plugin" + plugin);
 						
 						ce.setMsgBody("noderemoved");
 						return ce;
