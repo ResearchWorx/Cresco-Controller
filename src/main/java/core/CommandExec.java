@@ -1,5 +1,10 @@
 package core;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -226,6 +231,125 @@ public class CommandExec {
 							}
 						
 					}
+					
+				}
+				else if(ce.getParam("globalcmd") != null)
+				{
+					if(ce.getParam("globalcmd").equals("registercontroller"))
+					{
+						
+					}
+					else if(ce.getParam("globalcmd").equals("plugininventory"))
+					{
+						try
+						{
+						String pluginList = "";
+						File jarLocation = new File(ControllerEngine.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+						String parentDirName = jarLocation.getParent(); // to get the parent dir name
+						
+						File folder = new File(parentDirName + "/plugins");
+						if(folder.exists())
+						{
+						File[] listOfFiles = folder.listFiles();
+
+						    for (int i = 0; i < listOfFiles.length; i++) 
+						    {
+						      if (listOfFiles[i].isFile()) 
+						      {
+						        System.out.println("Found Plugin: " + listOfFiles[i].getName());
+						        pluginList = pluginList + listOfFiles[i].getName() + ",";
+						      } 
+						      
+						    }
+						    if(pluginList.length() > 0)
+						    {
+						    	pluginList = pluginList.substring(0, pluginList.length() - 1);
+						    	System.out.println("pluginList=" + pluginList);
+							    ce.setParam("pluginlist", pluginList);
+						    }
+						    ce.setMsgBody("There were " + listOfFiles.length + " plugins found.");
+						}
+						else
+						{
+							ce.setMsgBody("No plugin directory exist to inventory");
+						}
+						}
+						catch(Exception ex)
+						{
+							System.out.println(ex.toString());
+							ce.setMsgBody("Error: " + ex.toString());
+						}
+						return ce;   
+						 
+						
+					}
+					else if(ce.getParam("globalcmd").equals("plugindownload"))
+					{
+						try
+						{
+						String baseUrl = ce.getParam("pluginurl");
+						if(!baseUrl.endsWith("/"))
+						{
+							baseUrl = baseUrl + "/";
+						}
+						
+						URL website = new URL(baseUrl + ce.getParam("plugin"));
+						ReadableByteChannel rbc = Channels.newChannel(website.openStream());
+						
+						File jarLocation = new File(ControllerEngine.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+						String parentDirName = jarLocation.getParent(); // to get the parent dir name
+						String pluginDir = parentDirName + "/plugins";
+						//check if directory exist, if not create it
+						File pluginDirfile = new File(pluginDir);
+						if (!pluginDirfile.exists()) {
+							if (pluginDirfile.mkdir()) {
+								System.out.println("Directory " + pluginDir + " didn't exist and was created.");
+							} else {
+								System.out.println("Directory " + pluginDir + " didn't exist and we failed to create it!");
+							}
+						}
+						String pluginFile = parentDirName + "/plugins/" + ce.getParam("plugin");
+						boolean forceDownload = false;
+						if(ce.getParam("forceplugindownload") != null)
+						{
+							forceDownload = true;
+							System.out.println("Forcing Plugin Download");
+						}
+						
+						File pluginFileObject = new File(pluginFile);
+						if (!pluginFileObject.exists() || forceDownload) 
+						{
+							FileOutputStream fos = new FileOutputStream(parentDirName + "/plugins/" + ce.getParam("plugin"));
+							
+							fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+							if(pluginFileObject.exists())
+							{
+								ce.setParam("hasplugin", ce.getParam("plugin"));
+								ce.setMsgBody("Downloaded Plugin:" + ce.getParam("plugin"));
+								System.out.println("Downloaded Plugin:" + ce.getParam("plugin"));
+							}
+							else
+							{
+								ce.setMsgBody("Problem Downloading Plugin:" + ce.getParam("plugin"));
+								System.out.println("Problem Downloading Plugin:" + ce.getParam("plugin"));
+							}
+						}
+						else
+						{
+							ce.setMsgBody("Plugin already exists:" + ce.getParam("plugin"));
+							ce.setParam("hasplugin", ce.getParam("plugin"));
+							System.out.println("Plugin already exists:" + ce.getParam("plugin"));
+						}
+						
+						}
+						catch(Exception ex)
+						{
+							System.out.println(ex.toString());
+							ce.setMsgBody("Error: " + ex.toString());
+						}
+						return ce;
+					}
+					
 				}
 				
 			}
