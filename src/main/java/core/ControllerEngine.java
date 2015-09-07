@@ -1,6 +1,7 @@
 package core;
 
 import graphdb.GraphDBEngine;
+import httpserv.httpServerEngineDownloads;
 import httpserv.httpServerEngineExternal;
 import httpserv.httpServerEngineInternal;
 import httpserv.httpServerEnginePerf;
@@ -39,7 +40,13 @@ public class ControllerEngine {
 		
 		try
     	{
-    		System.out.println("Starting HTTPInternal Service");
+    		
+			System.out.println("Starting HTTPInternal Service");
+			httpServerEngineDownloads httpEngineDownloads = new httpServerEngineDownloads();
+			Thread httpServerThreadDownloads = new Thread(httpEngineDownloads);
+	    	httpServerThreadDownloads.start();
+	    	
+			System.out.println("Starting HTTPInternal Service");
 			httpServerEngineInternal httpEngineInternal = new httpServerEngineInternal();
 			Thread httpServerThreadInternal = new Thread(httpEngineInternal);
 	    	httpServerThreadInternal.start();

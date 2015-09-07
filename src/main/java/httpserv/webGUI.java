@@ -1,14 +1,8 @@
 package httpserv;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -17,11 +11,66 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import core.ControllerEngine;
+
 
 @Path("/")
 public class webGUI {
 	
 	
+	@GET
+	@Path("{subResources:.*}")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public Response getfile(@PathParam("subResources") String subResources) 
+	{
+		//System.out.println("Requesting file: " + subResources);
+		//	subResources = "/" + subResources;
+		InputStream in = null;
+		try{
+			
+			//InputStream in = new FileInputStream(theFile);
+			File jarLocation = new File(ControllerEngine.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+			String parentDirName = jarLocation.getParent(); // to get the parent dir name
+			
+			File pluginFile = new File(parentDirName + "/plugins/" + subResources);
+			if(pluginFile.exists())
+			{
+				in = new FileInputStream(pluginFile);
+			}
+			else
+			{
+				System.out.println("File not found: " + subResources);
+			}
+			//in = getClass().getResourceAsStream(subResources);
+			
+			if(in == null) 
+			{
+				
+				//in = getClass().getResourceAsStream("/404.html");
+				return Response.status(Response.Status.NOT_FOUND).build();
+		    }
+		}
+		catch(Exception ex)
+		{
+			System.out.println(ex.toString());
+			//in = getClass().getResourceAsStream("/500.html");
+			return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+	    
+		}
+		
+		if(subResources.endsWith(".jar"))
+		{
+			return Response.ok(in, "application/java-archive").build();
+		}
+		else
+		{
+			return Response.ok(in, MediaType.APPLICATION_OCTET_STREAM)
+					.header("Content-Disposition", "attachment; filename=\"" + "somefile" + "\"" ) //optional
+					.build();
+		}
+	}
+	
+/*
 	@GET
 	@Path("{subResources:.*}")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
@@ -79,7 +128,7 @@ public class webGUI {
 					.build();
 		}
 	}
-	
+*/	
 	/*
 	@GET
 	@Path("{subResources:.*}")

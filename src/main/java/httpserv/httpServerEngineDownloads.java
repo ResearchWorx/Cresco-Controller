@@ -51,18 +51,18 @@ import java.net.URL;
 import java.util.Enumeration;
 
 
-public class httpServerEngineExternal implements Runnable{
+public class httpServerEngineDownloads implements Runnable{
 
 	
 	public static String ipAddress;
 	
-	public httpServerEngineExternal() throws IOException, InterruptedException
+	public httpServerEngineDownloads() throws IOException, InterruptedException
 	{
 	
 	}
 	public void run()
 	{
-		System.out.println("Graphs UP...");
+		System.out.println("Starting HTTPDownloads Service...");
         try {
 			thed();
 		} catch (IOException e) {
@@ -127,7 +127,7 @@ public class httpServerEngineExternal implements Runnable{
 		}  
     	*/
     	//return UriBuilder.fromUri("http://" + ipAddress + "/").port(getPort(32000)).build();
-    	return UriBuilder.fromUri("http://0.0.0.0/").port(getPort(32001)).build();
+    	return UriBuilder.fromUri("http://0.0.0.0/").port(getPort(32003)).build();
         
     }
 
@@ -150,7 +150,7 @@ public class httpServerEngineExternal implements Runnable{
         
         //URI baseUri = UriBuilder.fromUri("http://localhost/").port(9998).build();
         URI baseUri = getBaseURI();
-        ResourceConfig config = new ResourceConfig(webREST.class);
+        ResourceConfig config = new ResourceConfig(webGUI.class);
         
         //config.register(webGUI.class);
         HttpServer server = GrizzlyHttpServerFactory.createHttpServer(baseUri, config);
