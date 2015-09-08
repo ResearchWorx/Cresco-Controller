@@ -5,12 +5,14 @@ import httpserv.httpServerEngineDownloads;
 import httpserv.httpServerEngineExternal;
 import httpserv.httpServerEngineInternal;
 import httpserv.httpServerEnginePerf;
+import scheduler.SchedulerEngine;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import broker.BrokerEngine;
 import shared.MsgEvent;
 import shared.MsgEventType;
 import core.PeerDiscovery.Peer;
@@ -20,6 +22,9 @@ public class ControllerEngine {
 	public static ConcurrentHashMap<String,ConcurrentLinkedQueue<MsgEvent>> regionalMsgMap;
 	public static CommandExec commandExec;
 	public static GraphDBEngine gdb;
+	public static boolean SchedulerActive = false;
+	public static SchedulerEngine se;
+	public static ConcurrentLinkedQueue<MsgEvent> resourceScheduleQueue;
 	
 	public static void main(String[] args) throws Exception 
 	{
@@ -28,6 +33,8 @@ public class ControllerEngine {
 		gdb = new GraphDBEngine(); //create graphdb connector
 		
 		regionalMsgMap = new ConcurrentHashMap<String,ConcurrentLinkedQueue<MsgEvent>>();
+		
+		resourceScheduleQueue = new ConcurrentLinkedQueue<MsgEvent>();
 		/*
 		gdb.addNode("regionName", null,null);
 		gdb.addNode("regionName", "agentName",null);
@@ -40,7 +47,21 @@ public class ControllerEngine {
 		
 		try
     	{
-    		
+			/*
+    		System.out.println("Starting Broker");
+    		BrokerEngine be = new BrokerEngine();
+    		*/
+			System.out.println("Starting SR Scheduler");
+			se = new SchedulerEngine();
+			Thread se_thread = new Thread(se);
+	    	se_thread.start();
+			
+	    	while(!ControllerEngine.SchedulerActive)
+	    	{
+	    		System.out.println("Waiting on SchedulerActive...");
+	    		Thread.sleep(1000);;
+	    	}
+			
 			System.out.println("Starting HTTPInternal Service");
 			httpServerEngineDownloads httpEngineDownloads = new httpServerEngineDownloads();
 			Thread httpServerThreadDownloads = new Thread(httpEngineDownloads);

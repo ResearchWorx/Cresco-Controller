@@ -1,7 +1,9 @@
 package graphdb;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -99,6 +101,11 @@ public class GraphDBEngine {
 			if(createVertexClass("pNode"))
 			{
 				createVertexKeyIndex("pNode","node_id");
+			}
+			System.out.println("Create iNode Vertex Class");
+			if(createVertexClass("iNode"))
+			{
+				createVertexKeyIndex("iNode","node_id");
 			}
 			//edge classes
 			System.out.println("Create isAgent Edge Class");
@@ -203,10 +210,126 @@ public class GraphDBEngine {
 		{
 			System.out.println("addEdge Error: " + ex.toString());
 		}
+		odb.rollback();
 		return false;
 		
     }
 	//end DB
+	
+	//client db
+	public String getLowAgent()
+	{
+		String agent_path = null;
+		int plugin_count = -1;
+		try
+		{
+			List<String> regionList = getNodeList(null,null,null);
+			System.out.println("Region Count: " + regionList.size());
+			for(String region : regionList)
+			{
+				List<String> agentList = getNodeList(region,null,null);
+				System.out.println("Agent Count: " + agentList.size());
+				for(String agent: agentList)
+				{
+					List<String> pluginList = getNodeList(region,agent,null);
+					System.out.println("Plugin Count: " + pluginList.size());
+					if(pluginList.size() > plugin_count)
+					{
+						agent_path = region + "," + agent; 
+						plugin_count = pluginList.size();
+					}
+				}
+			}
+		}
+		catch(Exception ex)
+		{
+			
+		}
+		
+		return agent_path;
+	}
+	
+	public List<String> getNodeList(String region, String agent, String plugin)
+	{
+		// null,null,null = region lists
+		// region,null,null = agent list for region
+		// region,agent,null = plugin list for agent
+		
+		List<String> nodeList = new ArrayList<String>();
+		
+		try
+		{
+			if((region == null) && (agent == null) && (plugin == null))
+			{
+				Iterable<Vertex> rNodeEdges = odb.getVerticesOfClass("rNode");
+				Iterator<Vertex> iter = rNodeEdges.iterator();
+				while (iter.hasNext())
+				{
+					Vertex rNode = iter.next();
+					nodeList.add(rNode.getProperty("node_name").toString());
+				}
+				return nodeList;
+			}
+			else if((region != null) && (agent == null) && (plugin == null))
+			{
+				System.out.println("getnodeid agent " + agent);
+				
+				Vertex rNode = odb.getVertexByKey("rNode.node_name", region);
+				if(rNode != null)
+				{
+					Iterable<Edge> agentEdges = rNode.getEdges(Direction.IN, "isAgent");
+					
+					Iterator<Edge> iter = agentEdges.iterator();
+					while (iter.hasNext())
+					{
+						Edge isAgent = iter.next();
+						Vertex aNode = isAgent.getVertex(Direction.OUT);
+						String aNode_name = aNode.getProperty("node_name");
+						nodeList.add(aNode_name);
+					}
+					return nodeList;
+				}
+			}
+			else if((region != null) && (agent != null) && (plugin == null))
+			{
+				System.out.println("getnodeid plugin " + plugin);
+				
+				String aNode_id = getNodeId(region,agent,null);
+				
+				if(aNode_id != null)
+				{
+					System.out.println("getnodeid plugin " + plugin + " got agentid:" + aNode_id);
+					
+					Vertex aNode = odb.getVertexByKey("aNode.node_id", aNode_id);
+					if(aNode != null)
+					{
+						System.out.println("getnodeid plugin " + plugin + " got agent");
+						
+						Iterable<Edge> agentEdges = aNode.getEdges(Direction.IN, "isPlugin");
+						Iterator<Edge> iter = agentEdges.iterator();
+						while (iter.hasNext())
+						{
+							Edge isPlugin = iter.next();
+							Vertex pNode = isPlugin.getVertex(Direction.OUT);
+							String pNode_name = pNode.getProperty("node_name");
+							nodeList.add(pNode_name);
+						}
+						return nodeList;
+					}
+				}
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("getNodeList: Error " + ex.toString());
+		}
+		return null;
+		
+	}
+	
+	
+	//end client
 	
 	public String addAppNode(String application_name)
 	{
@@ -224,9 +347,29 @@ public class GraphDBEngine {
 		{
 			System.out.println("addAppNode: Error " + ex.toString());
 		}
+		odb.rollback();
 		return null;
 		
 	}
+	
+	public boolean addINode(String inode_id)
+	{
+		try
+		{
+			odb.begin();
+			Vertex iNode = odb.addVertex("class:iNode");
+			iNode.setProperty("node_id", inode_id);
+			odb.commit();
+			return true;
+		}
+		catch(Exception ex)
+		{
+			System.out.println("addINode: Error " + ex.toString());
+		}
+		odb.rollback();
+		return false;
+	}
+	
 	public String getAppNodeId(String application_name)
 	{
 		
@@ -247,6 +390,16 @@ public class GraphDBEngine {
 		return null;
 		
 	}
+	public boolean isINode(String node_id)
+	{
+		Vertex iNode = odb.getVertexByKey("iNode.node_id", node_id);
+		if(iNode != null)
+		{
+			return true;
+		}
+		return false;
+	}
+	
 	public String getPathname(String region, String agent, String plugin)
 	{
 		return region + "," + agent + "," + plugin;
@@ -343,7 +496,7 @@ public class GraphDBEngine {
 								
 								if(pNode_name.equals(plugin))
 								{
-									node_id = aNode.getProperty("node_id");
+									node_id = pNode.getProperty("node_id");
 									//nodePathCache.put(pathname, node_id);
 									System.out.println("getnodeid plugin " + plugin + " " + node_id);
 									
@@ -505,6 +658,7 @@ public class GraphDBEngine {
 			long threadId = Thread.currentThread().getId();
 			System.out.println("addNode: thread_id: " + threadId + " Error " + ex.toString());
 		}
+		odb.rollback();
 		return null;
 		
 	}
@@ -563,6 +717,34 @@ public class GraphDBEngine {
 		
 	}
 	
+	public Map<String,String> getINodeParams(String node_id)
+	{
+		try
+		{
+			Map<String,String> paramMap = new HashMap<String,String>();
+			
+			if(node_id != null)
+			{
+				Vertex Node = odb.getVertexByKey("iNode.node_id", node_id);
+				if(Node != null)
+				{
+					for(String propKey : Node.getPropertyKeys())
+					{
+						paramMap.put(propKey, Node.getProperty(propKey).toString());
+					}
+					return paramMap;
+				}
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("getNodeParams: Error " + ex.toString());
+		}
+		return null;
+		
+	}
+	
 	public String getNodeParam(String region, String agent, String plugin, String param)
 	{
 		try
@@ -588,6 +770,62 @@ public class GraphDBEngine {
 			System.out.println("getNodeParam: Error " + ex.toString());
 		}
 		return null;
+		
+	}
+	public String getINodeParam(String node_id, String param)
+	{
+		try
+		{
+			if(node_id != null)
+			{
+				Vertex Node = odb.getVertexByKey("iNode.node_id", node_id);
+				if(Node != null)
+				{
+					String Node_param = Node.getProperty(param).toString();
+					if(Node_param != null)
+					{
+						return Node_param; 
+					}
+					
+				}
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("getNodeParam: Error " + ex.toString());
+		}
+		return null;
+		
+	}
+	public boolean setINodeParams(String node_id, Map<String,String> paramMap)
+	{
+		try
+		{
+			odb.begin();
+			if(node_id != null)
+			{
+				Vertex Node = odb.getVertexByKey("iNode.node_id", node_id);
+				if(Node != null)
+				{
+					Iterator it = paramMap.entrySet().iterator();
+					while (it.hasNext()) 
+					{
+						Map.Entry pairs = (Map.Entry)it.next();
+						Node.setProperty( pairs.getKey().toString(), pairs.getValue().toString());
+					}
+					odb.commit();
+					return true;
+				}
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("setNodeParams: Error " + ex.toString());
+		}
+		odb.rollback();
+		return false;
 		
 	}
 	
@@ -622,10 +860,37 @@ public class GraphDBEngine {
 		{
 			System.out.println("setNodeParams: Error " + ex.toString());
 		}
+		odb.rollback();
 		return false;
 		
 	}
-	
+	public Boolean setINodeParam(String node_id, String paramKey, String paramValue)
+	{
+		try
+		{
+			odb.begin();
+			
+			if(node_id != null)
+			{
+				
+				Vertex Node = odb.getVertexByKey("iNode.node_id", node_id);
+				if(Node != null)
+				{
+					Node.setProperty(paramKey, paramValue);
+					odb.commit();
+					return true;
+				}
+			}
+		
+		}
+		catch(Exception ex)
+		{
+			System.out.println("getNodeParam: Error " + ex.toString());
+		}
+		odb.rollback();
+		return false;
+		
+	}
 	public Boolean setNodeParam(String region, String agent, String plugin, String paramKey, String paramValue)
 	{
 		try
@@ -647,12 +912,13 @@ public class GraphDBEngine {
 					return true;
 				}
 			}
-			
+		
 		}
 		catch(Exception ex)
 		{
 			System.out.println("getNodeParam: Error " + ex.toString());
 		}
+		odb.rollback();
 		return false;
 		
 	}
@@ -678,6 +944,7 @@ public class GraphDBEngine {
 		{
 			System.out.println("updateEdge: Error " + ex.toString());
 		}
+		odb.rollback();
 		return false;
 	}
 	
@@ -702,15 +969,19 @@ public class GraphDBEngine {
 			
 			//check if app-node-path is in cache
 			String appPath = application + "," + region + "," + agent + "," + plugin;
+			
+			
 			Edge appPathEdge = appPathCache.getIfPresent(appPath);
 			if(appPathEdge != null)
-			{
+			{	
+				
 				//ok you have both a know app link and pNode : you can update the edge
 				if(updateEdge(appPathEdge,params))
 				{
 					//if edge was updated return true;
 					return true;
 				}
+				
 			}
 			else
 			{
@@ -779,7 +1050,32 @@ public class GraphDBEngine {
 		return false;
 	}
 	
-	public Boolean removeNode(String region, String agent, String plugin)
+	public boolean removeINode(String node_id)
+	{
+		try
+		{
+				odb.begin();
+				
+				Vertex iNode = odb.getVertexByKey("iNode.node_id", node_id);
+				if(iNode == null)
+				{
+					System.out.println("Can't remove iNode node_id " + node_id + " does no exist");
+					return true;
+				}
+				odb.removeVertex(iNode);
+				odb.commit();
+				return true;
+			
+		}
+		catch(Exception ex)
+		{
+			
+		}
+		odb.rollback();
+		return false;
+	}
+	
+	public boolean removeNode(String region, String agent, String plugin)
 	{
 		try
 		{
@@ -836,12 +1132,11 @@ public class GraphDBEngine {
 				else if((region != null) && (agent != null) && (plugin == null))
 				{
 					System.out.println("Removing agent: " + agent);
-					
 						odb.begin();
 						Vertex aNode = odb.getVertexByKey("aNode.node_id", node_id);
 						if(aNode == null)
 						{
-							System.out.println("Can't remove agent:" + agent + " does no exist");
+							System.out.println("Can't remove agent:" + agent  + " node_id " + node_id + " does no exist");
 							return true;
 						}
 						Iterable<Edge> pluginEdges = aNode.getEdges(Direction.IN, "isPlugin");
@@ -871,7 +1166,7 @@ public class GraphDBEngine {
 					Vertex pNode = odb.getVertexByKey("pNode.node_id", node_id);
 					if(pNode == null)
 					{
-						System.out.println("Can't remove plugin:" + plugin + " does no exist");
+						System.out.println("Can't remove plugin:" + plugin + " node_id " + node_id + " does no exist");
 						return true;
 					}
 					
@@ -903,7 +1198,8 @@ public class GraphDBEngine {
 			System.out.println("removeNode: thread_id: " + threadId + " Error:" + ex.toString());
 			
 		}
-		return null;
+		odb.rollback();
+		return false;
 		
 	}
 		

@@ -1,12 +1,19 @@
 package core;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.jar.Attributes;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 import shared.MsgEvent;
 import shared.MsgEventType;
@@ -235,9 +242,104 @@ public class CommandExec {
 				}
 				else if(ce.getParam("globalcmd") != null)
 				{
-					if(ce.getParam("globalcmd").equals("registercontroller"))
+					if(ce.getParam("globalcmd").equals("addplugin"))
 					{
-						
+						if(ce.getParam("inode_id") != null)
+						{
+							if(ControllerEngine.gdb.addINode(ce.getParam("inode_id")))
+							{
+								if((ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_code","0")) &&
+								(ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_desc","iNode Scheduled.")))
+								{
+									ce.setParam("status_code","0");
+									ce.setParam("status_desc","iNode Scheduled");
+									ControllerEngine.resourceScheduleQueue.offer(ce);
+								}
+								else
+								{
+									ce.setParam("status_code","1");
+									ce.setParam("status_desc","Could not set iNode params");
+								}
+							}
+							else
+							{
+								ce.setParam("status_code","1");
+								ce.setParam("status_desc","Could not create iNode_id!");	
+							}
+						}
+						else
+						{
+							ce.setParam("status_code","1");
+							ce.setParam("status_desc","No iNode_id found in payload!");	
+						}
+							
+						return ce;
+					}
+					else if(ce.getParam("globalcmd").equals("removeplugin"))
+					{
+						if(ce.getParam("inode_id") != null)
+						{
+							if(ControllerEngine.gdb.isINode(ce.getParam("inode_id")))
+							{
+								if((ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_code","10")) &&
+								(ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_desc","iNode scheduled for removal.")))
+								{
+									ce.setParam("status_code","10");
+									ce.setParam("status_desc","iNode scheduled for removal.");
+									ControllerEngine.resourceScheduleQueue.offer(ce);
+								}
+								else
+								{
+									ce.setParam("status_code","1");
+									ce.setParam("status_desc","Could not set iNode params");
+								}
+							}
+							else
+							{
+								ce.setParam("status_code","1");
+								ce.setParam("status_desc","iNode_id does not exist in DB!");	
+							}
+						}
+						else
+						{
+							ce.setParam("status_code","1");
+							ce.setParam("status_desc","No iNode_id found in payload!");	
+						}
+							
+						return ce;
+					}
+					else if(ce.getParam("globalcmd").equals("getpluginstatus"))
+					{
+						try
+						{
+							if(ce.getParam("inode_id") != null)
+							{
+								String status_code = ControllerEngine.gdb.getINodeParam(ce.getParam("inode_id"),"status_code");
+								String status_desc = ControllerEngine.gdb.getINodeParam(ce.getParam("inode_id"),"status_desc");
+								if((status_code != null) && (status_desc != null))
+								{
+									ce.setParam("status_code",status_code);
+									ce.setParam("status_desc",status_desc);
+								}
+								else
+								{
+									ce.setParam("status_code","1");
+									ce.setParam("status_desc","Could not read iNode params");
+								}
+							}
+							else
+							{
+								ce.setParam("status_code","1");
+								ce.setParam("status_desc","No iNode_id found in payload!");	
+							}					
+							
+						}
+						catch(Exception ex)
+						{
+							ce.setParam("status_code","1");
+							ce.setParam("status_desc",ex.toString());	
+						}
+						return ce;
 					}
 					else if(ce.getParam("globalcmd").equals("plugininventory"))
 					{
@@ -257,7 +359,10 @@ public class CommandExec {
 						      if (listOfFiles[i].isFile()) 
 						      {
 						        System.out.println("Found Plugin: " + listOfFiles[i].getName());
-						        pluginList = pluginList + listOfFiles[i].getName() + ",";
+						        //<pluginName>=<pluginVersion>,
+						        String pluginPath = listOfFiles[i].getAbsolutePath();
+						        pluginList = pluginList + getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath) + ",";
+						        //pluginList = pluginList + listOfFiles[i].getName() + ",";
 						      } 
 						      
 						    }
@@ -407,6 +512,56 @@ public class CommandExec {
 				return ce;
 			}
 		return null;
+	}
+	
+	public static String getPluginName(String jarFile) //This should pull the version information from jar Meta data
+	{
+			   String version;
+			   try{
+			   //String jarFile = AgentEngine.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+			   //System.out.println("JARFILE:" + jarFile);
+			   //File file = new File(jarFile.substring(5, (jarFile.length() )));
+			   File file = new File(jarFile);
+	          FileInputStream fis = new FileInputStream(file);
+	          @SuppressWarnings("resource")
+			   JarInputStream jarStream = new JarInputStream(fis);
+			   Manifest mf = jarStream.getManifest();
+			   
+			   Attributes mainAttribs = mf.getMainAttributes();
+	          version = mainAttribs.getValue("artifactId");
+			   }
+			   catch(Exception ex)
+			   {
+				   String msg = "Unable to determine Plugin Version " + ex.toString();
+				   System.err.println(msg);
+				   version = "Unable to determine Version";
+			   }
+			   return version;
+	}
+	
+	public static String getPluginVersion(String jarFile) //This should pull the version information from jar Meta data
+	{
+			   String version;
+			   try{
+			   //String jarFile = AgentEngine.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+			   //System.out.println("JARFILE:" + jarFile);
+			   //File file = new File(jarFile.substring(5, (jarFile.length() )));
+			   File file = new File(jarFile);
+	          FileInputStream fis = new FileInputStream(file);
+	          @SuppressWarnings("resource")
+			   JarInputStream jarStream = new JarInputStream(fis);
+			   Manifest mf = jarStream.getManifest();
+			   
+			   Attributes mainAttribs = mf.getMainAttributes();
+	          version = mainAttribs.getValue("Implementation-Version");
+			   }
+			   catch(Exception ex)
+			   {
+				   String msg = "Unable to determine Plugin Version " + ex.toString();
+				   System.err.println(msg);
+				   version = "Unable to determine Version";
+			   }
+			   return version;
 	}
 	
 	
