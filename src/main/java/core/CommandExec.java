@@ -117,6 +117,7 @@ public class CommandExec {
 							//ControllerEngine.gdb.addNode(region, agent,plugin);
 							int timeout = 0;
 							//this to to avoid problem related to runcase
+							/*
 							while((ControllerEngine.gdb.getNodeId(region, agent, plugin) == null) && (timeout < 5))
 							{
 								try {
@@ -128,6 +129,7 @@ public class CommandExec {
 									e.printStackTrace();
 								}
 							}
+							*/
 							if(ControllerEngine.gdb.getNodeId(region, agent, plugin) != null)
 							{
 								ControllerEngine.gdb.setNodeParam(region, agent, plugin, "configparams", ce.getParam("configparams"));

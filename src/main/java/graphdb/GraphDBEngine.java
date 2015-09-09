@@ -15,6 +15,7 @@ import com.orientechnologies.orient.core.metadata.schema.OSchema;
 import com.orientechnologies.orient.core.tx.OTransaction.TXTYPE;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Index;
 import com.tinkerpop.blueprints.Parameter;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.impls.orient.OrientGraph;
@@ -24,17 +25,11 @@ import com.tinkerpop.blueprints.impls.orient.OrientGraphNoTx;
 public class GraphDBEngine {
 
 	private OrientGraphFactory factory;
-	private OrientGraph odb;
+	//private OrientGraph odb;
 	public Cache<String, String> nodePathCache;
 	public Cache<String, Edge> appPathCache;
 	
 	//public Cache<String, Edge> appPathCache;
-	
-	public Map<String, Long> inProcessNode;
-	public Map<String, Long> inProcessEdge;
-	
-	
-	//private List<String> inProcessPaths;
 	
 	public GraphDBEngine()
 	{
@@ -52,11 +47,7 @@ public class GraphDBEngine {
 			    .expireAfterWrite(15, TimeUnit.MINUTES)
 			    .build();
 		
-		inProcessNode = new ConcurrentHashMap<String,Long>();
-		inProcessEdge  = new ConcurrentHashMap<String,Long>();
 		
-		
-		//inProcessPaths = new ArrayList<String>();
 		
 		//String connection_string = "remote:" + Launcher.conf.getGraphDBServer() + "/" + Launcher.conf.getGraphDBName();
 		//String username = Launcher.conf.getGraphDBLogin();
@@ -68,9 +59,13 @@ public class GraphDBEngine {
 		System.out.println(username);
 		System.out.println(password);
 		
-        factory = new OrientGraphFactory(connection_string,username,password);
-        odb = factory.getTx();
-        
+		//OrientGraph txGraph = factory.getTx();
+        factory = new OrientGraphFactory(connection_string,username,password).setupPool(1, 10);
+        //OrientGraph odb = factory.getTx();
+       
+        //odb.setAutoStartTx(false);
+        //graph.setTransactionMode(Mode.MANUAL);
+        //graph.startTransaction();
         populateDB();
         	
 	}
@@ -197,7 +192,7 @@ public class GraphDBEngine {
 	Boolean addEdge(Vertex fromV, Vertex toV, String className) 
 	{
 		//Vertex rNode = odb.addVertex("class:rNode");
-		
+		OrientGraph odb = factory.getTx();
 		try
 		{
 			odb.begin();
@@ -209,16 +204,26 @@ public class GraphDBEngine {
 		catch(Exception ex)
 		{
 			System.out.println("addEdge Error: " + ex.toString());
+			odb.rollback();
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 		
     }
 	//end DB
 	
 	//client db
+	public void blash()
+	{
+		//Index<Vertex> index = odb.getIndex("aNode", Vertex.class);
+		
+		
+	}
+	
 	public String getLowAgent()
 	{
+		
+		
 		String agent_path = null;
 		int plugin_count = -1;
 		try
@@ -256,9 +261,11 @@ public class GraphDBEngine {
 		// region,agent,null = plugin list for agent
 		
 		List<String> nodeList = new ArrayList<String>();
+		OrientGraph odb = factory.getTx();
 		
 		try
 		{
+			
 			if((region == null) && (agent == null) && (plugin == null))
 			{
 				Iterable<Vertex> rNodeEdges = odb.getVerticesOfClass("rNode");
@@ -268,6 +275,7 @@ public class GraphDBEngine {
 					Vertex rNode = iter.next();
 					nodeList.add(rNode.getProperty("node_name").toString());
 				}
+				odb.shutdown();
 				return nodeList;
 			}
 			else if((region != null) && (agent == null) && (plugin == null))
@@ -287,6 +295,7 @@ public class GraphDBEngine {
 						String aNode_name = aNode.getProperty("node_name");
 						nodeList.add(aNode_name);
 					}
+					odb.shutdown();
 					return nodeList;
 				}
 			}
@@ -314,6 +323,7 @@ public class GraphDBEngine {
 							String pNode_name = pNode.getProperty("node_name");
 							nodeList.add(pNode_name);
 						}
+						odb.shutdown();
 						return nodeList;
 					}
 				}
@@ -323,7 +333,9 @@ public class GraphDBEngine {
 		catch(Exception ex)
 		{
 			System.out.println("getNodeList: Error " + ex.toString());
+			odb.rollback();
 		}
+		odb.shutdown();
 		return null;
 		
 	}
@@ -333,6 +345,8 @@ public class GraphDBEngine {
 	
 	public String addAppNode(String application_name)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			odb.begin();
@@ -341,62 +355,75 @@ public class GraphDBEngine {
 			Application.setProperty("application_id", application_id);
 			Application.setProperty("application_name", application_name);
 			odb.commit();
+			odb.shutdown();
 			return application_id;
 		}
 		catch(Exception ex)
 		{
 			System.out.println("addAppNode: Error " + ex.toString());
+			odb.rollback();
 		}
-		odb.rollback();
+		odb.shutdown();
 		return null;
 		
 	}
 	
 	public boolean addINode(String inode_id)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			odb.begin();
 			Vertex iNode = odb.addVertex("class:iNode");
 			iNode.setProperty("node_id", inode_id);
 			odb.commit();
+			odb.shutdown();
 			return true;
 		}
 		catch(Exception ex)
 		{
 			System.out.println("addINode: Error " + ex.toString());
+			odb.rollback();
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 	}
 	
 	public String getAppNodeId(String application_name)
 	{
-		
+		OrientGraph odb = factory.getTx();
 		try
 		{
 			
 			Vertex Application = odb.getVertexByKey("Application.application_name", application_name);
 			if(Application != null)
 			{
+				odb.shutdown();
 				return Application.getProperty("application_id");
 			}
-			
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("getAppNodeId: Error " + ex.toString());
+			
 		}
+		odb.shutdown();
 		return null;
 		
 	}
 	public boolean isINode(String node_id)
 	{
+		OrientGraph odb = factory.getTx();
+		odb.begin();
 		Vertex iNode = odb.getVertexByKey("iNode.node_id", node_id);
 		if(iNode != null)
 		{
+			odb.shutdown();
 			return true;
 		}
+		odb.shutdown();
 		return false;
 	}
 	
@@ -407,22 +434,18 @@ public class GraphDBEngine {
 	}
 	public String getNodeId(String region, String agent, String plugin)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			String pathname = getPathname(region,agent,plugin);
-			/*
-			while(inProcessNode.containsKey(pathname))
-			{
-				System.out.println("getNodeId: inProcessPaths: "+ pathname + " Sleeping....");
-				Thread.sleep(1000);
-			}
-			*/
 			
 			//String node_id = nodePathCache.getIfPresent(pathname);
 			
 			String node_id = null;
 			if(node_id != null)
 			{
+				odb.shutdown();
 				return node_id;
 			}	
 			else
@@ -437,6 +460,7 @@ public class GraphDBEngine {
 						node_id = rNode.getProperty("node_id");
 						//nodePathCache.put(pathname, node_id);
 						System.out.println("getnodeid Region " + region + " " + node_id);
+						odb.shutdown();
 						return node_id;
 					}
 					
@@ -462,7 +486,7 @@ public class GraphDBEngine {
 								node_id = aNode.getProperty("node_id");
 								//nodePathCache.put(pathname, node_id);
 								System.out.println("getnodeid agent " + agent + " " + node_id);
-								
+								odb.shutdown();
 								return node_id;
 							}
 							
@@ -499,7 +523,7 @@ public class GraphDBEngine {
 									node_id = pNode.getProperty("node_id");
 									//nodePathCache.put(pathname, node_id);
 									System.out.println("getnodeid plugin " + plugin + " " + node_id);
-									
+									odb.shutdown();
 									return node_id;
 								}
 							}
@@ -511,33 +535,30 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			//System.out.println("getNodeId: Error:" + ex.toString());
 			long threadId = Thread.currentThread().getId();
 			System.out.println("getNodeId: thread_id: " + threadId + " Error:" + ex.toString());
 			
 		}
+		odb.shutdown();
 		return null;
 		
 	}
 	
 	public String addNode(String region, String agent, String plugin)
 	{
+		OrientGraph odb = factory.getTx();
 		
 		try
 		{
 			String pathname = getPathname(region,agent,plugin);
 			
-			/*
-			while(inProcessNode.containsKey(pathname))
-			{
-				System.out.println("getNodeId: inProcessPaths: "+ pathname + " Sleeping....");
-				Thread.sleep(1000);
-			}
-			*/
 			
 			String node_id = getNodeId(region,agent,plugin);
 			if(node_id != null)
 			{
+				odb.shutdown();
 				System.out.println("Tried to add duplicate Node : " + pathname + " node_id:" + node_id);
 				return node_id; 
 			}
@@ -551,7 +572,6 @@ public class GraphDBEngine {
 					
 					node_id = UUID.randomUUID().toString();
 					
-					inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 					
 					Vertex rNode = odb.addVertex("class:rNode");
 					rNode.setProperty("node_id", node_id);
@@ -560,13 +580,11 @@ public class GraphDBEngine {
 					//check that node can be fetched
 					rNode = odb.getVertexByKey("rNode.node_name", region);
 					//block add request
-					while(rNode == null)
-					{
-						rNode = odb.getVertexByKey("rNode.node_name", region);
-						System.out.println("Verifying rNode_id:" + node_id + " ....");
-					}
+					
+					
 					//nodePathCache.put(pathname, node_id);
-					inProcessNode.remove(pathname);
+					
+					odb.shutdown();
 					return node_id;
 					
 				}
@@ -576,7 +594,6 @@ public class GraphDBEngine {
 					odb.begin();
 					
 					node_id = UUID.randomUUID().toString();
-					inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 					
 					Vertex rNode = odb.getVertexByKey("rNode.node_name", region);
 					if(rNode == null)
@@ -598,13 +615,15 @@ public class GraphDBEngine {
 					odb.commit();
 					aNode = odb.getVertexByKey("aNode.node_id", node_id);
 					//block add request
+					/*
 					while(aNode == null)
 					{
 						aNode = odb.getVertexByKey("aNode.node_id", node_id);
 						System.out.println("Verifying aNode_id:" + node_id + " ....");
 					}
+					*/
 					//nodePathCache.put(pathname, node_id);
-					inProcessNode.remove(pathname); //block until added
+					odb.shutdown();
 					return node_id;
 					
 				}
@@ -614,7 +633,6 @@ public class GraphDBEngine {
 					odb.begin();
 					
 					node_id = UUID.randomUUID().toString();
-					inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 					
 					String aNode_id = getNodeId(region,agent,null);
 					
@@ -639,14 +657,15 @@ public class GraphDBEngine {
 					odb.commit();
 					pNode = odb.getVertexByKey("pNode.node_id", node_id);
 					//block add request
+					/*
 					while(pNode == null)
 					{
 						pNode = odb.getVertexByKey("pNode.node_id", node_id);
 						System.out.println("Verifying pNode_id:" + node_id + " ....");
 					}
-					
+					*/
 					//nodePathCache.put(pathname, node_id);
-					inProcessNode.remove(pathname); //block until added
+					odb.shutdown();
 					return node_id;
 					
 				}
@@ -655,10 +674,11 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			long threadId = Thread.currentThread().getId();
 			System.out.println("addNode: thread_id: " + threadId + " Error " + ex.toString());
 		}
-		odb.rollback();
+		odb.shutdown();
 		return null;
 		
 	}
@@ -690,6 +710,8 @@ public class GraphDBEngine {
 	
 	public Map<String,String> getNodeParams(String region, String agent, String plugin)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			Map<String,String> paramMap = new HashMap<String,String>();
@@ -704,6 +726,7 @@ public class GraphDBEngine {
 					{
 						paramMap.put(propKey, Node.getProperty(propKey).toString());
 					}
+					odb.shutdown();
 					return paramMap;
 				}
 			}
@@ -711,14 +734,18 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("getNodeParams: Error " + ex.toString());
 		}
+		odb.shutdown();
 		return null;
 		
 	}
 	
 	public Map<String,String> getINodeParams(String node_id)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			Map<String,String> paramMap = new HashMap<String,String>();
@@ -732,6 +759,7 @@ public class GraphDBEngine {
 					{
 						paramMap.put(propKey, Node.getProperty(propKey).toString());
 					}
+					odb.shutdown();
 					return paramMap;
 				}
 			}
@@ -739,14 +767,18 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("getNodeParams: Error " + ex.toString());
 		}
+		odb.shutdown();
 		return null;
 		
 	}
 	
 	public String getNodeParam(String region, String agent, String plugin, String param)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			String node_id = getNodeId(region,agent,plugin);
@@ -758,6 +790,7 @@ public class GraphDBEngine {
 					String Node_param = Node.getProperty(param).toString();
 					if(Node_param != null)
 					{
+						odb.shutdown();
 						return Node_param; 
 					}
 					
@@ -767,13 +800,17 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("getNodeParam: Error " + ex.toString());
 		}
+		odb.shutdown();
 		return null;
 		
 	}
 	public String getINodeParam(String node_id, String param)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			if(node_id != null)
@@ -784,6 +821,7 @@ public class GraphDBEngine {
 					String Node_param = Node.getProperty(param).toString();
 					if(Node_param != null)
 					{
+						odb.shutdown();
 						return Node_param; 
 					}
 					
@@ -793,13 +831,17 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("getNodeParam: Error " + ex.toString());
 		}
+		odb.shutdown();
 		return null;
 		
 	}
 	public boolean setINodeParams(String node_id, Map<String,String> paramMap)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			odb.begin();
@@ -815,6 +857,7 @@ public class GraphDBEngine {
 						Node.setProperty( pairs.getKey().toString(), pairs.getValue().toString());
 					}
 					odb.commit();
+					odb.shutdown();
 					return true;
 				}
 			}
@@ -822,15 +865,18 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("setNodeParams: Error " + ex.toString());
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 		
 	}
 	
 	public Boolean setNodeParams(String region, String agent, String plugin, Map<String,String> paramMap)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			odb.begin();
@@ -838,7 +884,6 @@ public class GraphDBEngine {
 			if(node_id != null)
 			{
 				String pathname = getPathname(region,agent,plugin);
-				inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 				
 				Vertex Node = odb.getVertexByKey(getNodeClass(region,agent,plugin) + ".node_id", node_id);
 				if(Node != null)
@@ -850,7 +895,7 @@ public class GraphDBEngine {
 						Node.setProperty( pairs.getKey().toString(), pairs.getValue().toString());
 					}
 					odb.commit();
-					inProcessNode.remove(pathname);
+					odb.shutdown();
 					return true;
 				}
 			}
@@ -858,14 +903,17 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("setNodeParams: Error " + ex.toString());
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 		
 	}
 	public Boolean setINodeParam(String node_id, String paramKey, String paramValue)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			odb.begin();
@@ -878,6 +926,7 @@ public class GraphDBEngine {
 				{
 					Node.setProperty(paramKey, paramValue);
 					odb.commit();
+					odb.shutdown();
 					return true;
 				}
 			}
@@ -885,14 +934,17 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("getNodeParam: Error " + ex.toString());
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 		
 	}
 	public Boolean setNodeParam(String region, String agent, String plugin, String paramKey, String paramValue)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			odb.begin();
@@ -901,14 +953,13 @@ public class GraphDBEngine {
 			if(node_id != null)
 			{
 				String pathname = getPathname(region,agent,plugin);
-				inProcessNode.put(pathname, System.currentTimeMillis()); //block until added
 				
 				Vertex Node = odb.getVertexByKey(getNodeClass(region,agent,plugin) + ".node_id", node_id);
 				if(Node != null)
 				{
 					Node.setProperty(paramKey, paramValue);
 					odb.commit();
-					inProcessNode.remove(pathname);
+					odb.shutdown();
 					return true;
 				}
 			}
@@ -916,15 +967,18 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("getNodeParam: Error " + ex.toString());
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 		
 	}
 	
 	public boolean updateEdge(Edge edge, Map<String,String> params)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			if(edge != null)
@@ -936,34 +990,37 @@ public class GraphDBEngine {
 				    edge.setProperty(entry.getKey(), entry.getValue());
 				}
 				odb.commit();
-			
+				odb.shutdown();
 				return true;
 			}
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("updateEdge: Error " + ex.toString());
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 	}
 	
 	public boolean updatePerf(String region, String agent, String plugin, String application, Map<String,String> params)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
    	 	{ 
-			
-			
 			//precheck input
 			String node_class = getNodeClass(region,agent,plugin);
 			if(node_class == null)
 			{
 				System.out.println("GraphDBEngine : updatePerf : Null nodeClass:" + region + " Agent:" + agent + " Plugin:" + plugin);	
+				odb.shutdown();
 				return false;
 			}
 			if(!node_class.equals("pNode"))
 			{
 				System.out.println("GraphDBEngine : updatePerf : nodeClass != pNode:" + region + " Agent:" + agent + " Plugin:" + plugin);	
+				odb.shutdown();
 				return false;
 			}
 			
@@ -979,6 +1036,7 @@ public class GraphDBEngine {
 				if(updateEdge(appPathEdge,params))
 				{
 					//if edge was updated return true;
+					odb.shutdown();
 					return true;
 				}
 				
@@ -992,6 +1050,7 @@ public class GraphDBEngine {
 				if(node_id == null)
 				{
 					System.out.println("GraphDBEngine : updatePerf : Tried to updatePerf before node_id was created:" + region + " Agent:" + agent + " Plugin:" + plugin);	
+					odb.shutdown();
 					return false;
 				}
 			
@@ -1022,6 +1081,7 @@ public class GraphDBEngine {
 							//we have found the Edge, cache it
 							appPathCache.put(appPath, isConnected);
 							//if edge was updated return true;
+							odb.shutdown();
 							return true;
 						}
 					}
@@ -1036,6 +1096,7 @@ public class GraphDBEngine {
 				{
 					//if edge was updated return true;
 					appPathCache.put(appPath, appPathEdge);
+					odb.shutdown();
 					return true;
 				}
 				
@@ -1044,14 +1105,18 @@ public class GraphDBEngine {
    	 	}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			System.out.println("Controller : GraphDBEngine : Failed to updatePerf");
 		
 		}
+		odb.shutdown();
 		return false;
 	}
 	
 	public boolean removeINode(String node_id)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 				odb.begin();
@@ -1064,30 +1129,26 @@ public class GraphDBEngine {
 				}
 				odb.removeVertex(iNode);
 				odb.commit();
+				odb.shutdown();
 				return true;
 			
 		}
 		catch(Exception ex)
 		{
-			
+			odb.rollback();
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 	}
 	
 	public boolean removeNode(String region, String agent, String plugin)
 	{
+		OrientGraph odb = factory.getTx();
+		
 		try
 		{
 			String pathname = getPathname(region,agent,plugin);
 			System.out.println("Removing pathname: " + pathname);
-			/*
-			while(inProcessNode.containsKey(pathname))
-			{
-				System.out.println("removeNode: inProcessPaths: " + pathname + " Sleeping....");
-				Thread.sleep(1000);
-			}
-			*/
 			
 			String node_id = getNodeId(region,agent,plugin);
 			
@@ -1098,6 +1159,7 @@ public class GraphDBEngine {
 			{
 				//remove node
 				System.out.println("removeNode: Error: Node Path: " + pathname + " does not exist!");
+				odb.shutdown();
 				return false;
 			}	
 			else
@@ -1121,11 +1183,14 @@ public class GraphDBEngine {
 						if(!removeNode(region,agent_name,null))
 						{
 							System.out.println("removeNode: Error: Unable to remove aNode_id:" + aNode.getProperty("node_id")  + " aNode_name:" + aNode.getProperty("node_name"));
+							odb.shutdown();
 							return false;
 						}
 					}
+					rNode = odb.getVertexByKey("rNode.node_id", node_id);
 					odb.removeVertex(rNode);
 					odb.commit();
+					odb.shutdown();
 					return true;
 				}
 				//check agent
@@ -1137,6 +1202,7 @@ public class GraphDBEngine {
 						if(aNode == null)
 						{
 							System.out.println("Can't remove agent:" + agent  + " node_id " + node_id + " does no exist");
+							odb.shutdown();
 							return true;
 						}
 						Iterable<Edge> pluginEdges = aNode.getEdges(Direction.IN, "isPlugin");
@@ -1149,12 +1215,14 @@ public class GraphDBEngine {
 							if(!removeNode(region,agent,plugin_name))
 							{
 								System.out.println("removeNode: Error: Unable to remove pNode_id:" + pNode.getProperty("node_id")  + " pNode_name:" + pNode.getProperty("node_name"));
+								odb.shutdown();
 								return false;
 							}
 						}
-						
+						aNode = odb.getVertexByKey("aNode.node_id", node_id);
 						odb.removeVertex(aNode);
 						odb.commit();
+						odb.shutdown();
 						return true;
 					
 				}
@@ -1167,9 +1235,10 @@ public class GraphDBEngine {
 					if(pNode == null)
 					{
 						System.out.println("Can't remove plugin:" + plugin + " node_id " + node_id + " does no exist");
+						odb.shutdown();
 						return true;
 					}
-					
+					/*
 					for(String propKey : pNode.getPropertyKeys())
 					{
 						if(pNode.getProperty(propKey) !=null)
@@ -1181,11 +1250,12 @@ public class GraphDBEngine {
 							System.out.println("REMOVING key: " + propKey);
 							
 						}
-							
-					
+						
 					}
+					*/
 					odb.removeVertex(pNode);
 					odb.commit();
+					odb.shutdown();
 					return true;
 				}
 			}
@@ -1193,12 +1263,13 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
+			odb.rollback();
 			//System.out.println("getNodeId: Error:" + ex.toString());
 			long threadId = Thread.currentThread().getId();
 			System.out.println("removeNode: thread_id: " + threadId + " Error:" + ex.toString());
 			
 		}
-		odb.rollback();
+		odb.shutdown();
 		return false;
 		
 	}
