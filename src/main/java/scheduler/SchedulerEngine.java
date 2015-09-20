@@ -34,7 +34,7 @@ public class SchedulerEngine implements Runnable {
 						else if(ce.getParam("globalcmd").equals("removeplugin"))
 						{
 							System.out.println("Removing iNode: " + ce.getParam("inode_id"));
-							ControllerEngine.gdb.removeINode(ce.getParam("inode_id"));
+							ControllerEngine.gdb.removeINode(ce.getParam("resource_id"),ce.getParam("inode_id"));
 						}
 					}
 					else
