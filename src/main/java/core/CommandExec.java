@@ -245,14 +245,15 @@ public class CommandExec {
 				{
 					if(ce.getParam("globalcmd").equals("addplugin"))
 					{
-						if((ce.getParam("inode_id") != null) && (ce.getParam("resource_id") != null))
+						if((ce.getParam("inode_id") != null) && (ce.getParam("resource_id") != null) && (ce.getParam("configparams") != null))
 						{
 							if(ControllerEngine.gdb.getINodeId(ce.getParam("resource_id"),ce.getParam("inode_id")) == null)
 							{
 								if(ControllerEngine.gdb.addINode(ce.getParam("resource_id"),ce.getParam("inode_id")) != null)
 								{
 									if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","0")) &&
-											(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Scheduled.")))
+										(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Scheduled.")) &&
+										(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"configparams",ce.getParam("configparams"))))
 									{
 										ce.setParam("status_code","0");
 										ce.setParam("status_desc","iNode Scheduled");

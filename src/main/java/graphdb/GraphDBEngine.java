@@ -1,9 +1,16 @@
 package graphdb;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import com.orientechnologies.orient.core.metadata.schema.OClass;
@@ -1010,7 +1017,6 @@ public class GraphDBEngine {
 		return nodeRemoved;
 	}
 	
-	
 	private boolean IremoveResourceNode(String resource_id)
 	{
 		boolean nodeRemoved = false;
@@ -1066,7 +1072,6 @@ public class GraphDBEngine {
 		return nodeRemoved;
 		
 	}
-	
 	
 	public boolean IsetINodeParams(String resource_id, String inode_id, Map<String,String> paramMap)
 	{
@@ -1366,7 +1371,6 @@ public class GraphDBEngine {
 		return isUpdated;
 	}
 	
-	
 	//INIT Functions
 	public void initCrescoDB()
 	{
@@ -1476,39 +1480,6 @@ public class GraphDBEngine {
 	//CLIENT FUNCTIONS
 	
 	//client DB
-	
-	public String getLowAgent()
-	{
-		String agent_path = null;
-		int plugin_count = -1;
-		try
-		{
-			List<String> regionList = getNodeList(null,null,null);
-			System.out.println("Region Count: " + regionList.size());
-			for(String region : regionList)
-			{
-				List<String> agentList = getNodeList(region,null,null);
-				System.out.println("Agent Count: " + agentList.size());
-				for(String agent: agentList)
-				{
-					List<String> pluginList = getNodeList(region,agent,null);
-					System.out.println("Plugin Count: " + pluginList.size());
-					if(pluginList.size() > plugin_count)
-					{
-						agent_path = region + "," + agent; 
-						plugin_count = pluginList.size();
-					}
-				}
-			}
-		}
-		catch(Exception ex)
-		{
-			
-		}
-		
-		return agent_path;
-	}
-
 	
 	public String addAppNode(String application_name)
 	{
