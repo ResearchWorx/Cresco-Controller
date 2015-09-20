@@ -25,7 +25,6 @@ public class CommandExec {
 		
 	}
 	
-	
 	public MsgEvent cmdExec(MsgEvent ce)
 	{
 			if(ce.getMsgType() == MsgEventType.CONFIG)
@@ -248,25 +247,33 @@ public class CommandExec {
 					{
 						if((ce.getParam("inode_id") != null) && (ce.getParam("resource_id") != null))
 						{
-							if(ControllerEngine.gdb.addINode(ce.getParam("resource_id"),ce.getParam("inode_id")) != null)
+							if(ControllerEngine.gdb.getINodeId(ce.getParam("resource_id"),ce.getParam("inode_id")) == null)
 							{
-								if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","0")) &&
-								(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Scheduled.")))
+								if(ControllerEngine.gdb.addINode(ce.getParam("resource_id"),ce.getParam("inode_id")) != null)
 								{
-									ce.setParam("status_code","0");
-									ce.setParam("status_desc","iNode Scheduled");
-									ControllerEngine.resourceScheduleQueue.offer(ce);
+									if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","0")) &&
+											(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Scheduled.")))
+									{
+										ce.setParam("status_code","0");
+										ce.setParam("status_desc","iNode Scheduled");
+										ControllerEngine.resourceScheduleQueue.offer(ce);
+									}
+									else
+									{
+										ce.setParam("status_code","1");
+										ce.setParam("status_desc","Could not set iNode params");
+									}
 								}
 								else
 								{
 									ce.setParam("status_code","1");
-									ce.setParam("status_desc","Could not set iNode params");
+									ce.setParam("status_desc","Could not create iNode_id!");	
 								}
 							}
 							else
 							{
 								ce.setParam("status_code","1");
-								ce.setParam("status_desc","Could not create iNode_id!");	
+								ce.setParam("status_desc","iNode_id already exist!");
 							}
 						}
 						else
@@ -279,9 +286,9 @@ public class CommandExec {
 					}
 					else if(ce.getParam("globalcmd").equals("removeplugin"))
 					{
-						if(ce.getParam("inode_id") != null)
+						if((ce.getParam("inode_id") != null) && (ce.getParam("resource_id") != null))
 						{
-							if((ce.getParam("inode_id") != null) && (ce.getParam("resource_id") != null))
+							if(ControllerEngine.gdb.getINodeId(ce.getParam("resource_id"),ce.getParam("inode_id")) != null)
 							{
 								if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","10")) &&
 								(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode scheduled for removal.")))
@@ -305,7 +312,7 @@ public class CommandExec {
 						else
 						{
 							ce.setParam("status_code","1");
-							ce.setParam("status_desc","No iNode_id found in payload!");	
+							ce.setParam("status_desc","No resource_id or iNode_id found in payload!");	
 						}
 							
 						return ce;

@@ -1,7 +1,6 @@
 package graphdb;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +69,7 @@ public class GraphDBEngine {
 		{
 			graph = factory.getTx();
 			
-			Iterable<Vertex> resultIterator = graph.command(new OCommandSQL("SELECT rid FROM INDEX:iNode.nodePath WHERE key = [\"" + resource_id + "\",\"" + node_id + "\"]")).execute();
+			Iterable<Vertex> resultIterator = graph.command(new OCommandSQL("SELECT rid FROM INDEX:iNode.nodePath WHERE key = [\"" + resource_id + "\",\"" + inode_id + "\"]")).execute();
 					
 			Iterator<Vertex> iter = resultIterator.iterator();
 			if(iter.hasNext())
@@ -380,7 +379,7 @@ public class GraphDBEngine {
 			if(node_id != null)
 			{
 				graph = factory.getTx();
-				Vertex iNode = graph.getVertex(inode_id);
+				Vertex iNode = graph.getVertex(node_id);
 				iNode_param = iNode.getProperty(param).toString();
 			}
 			
@@ -614,6 +613,7 @@ public class GraphDBEngine {
 					
 					Vertex fromV = graph.addVertex("class:iNode");
 					fromV.setProperty("inode_id", inode_id);
+					fromV.setProperty("resource_id", resource_id);
 					
 					
 					//ADD EDGE TO RESOURCE
@@ -946,7 +946,7 @@ public class GraphDBEngine {
 			String node_id = getINodeId(resource_id, inode_id);
 			if(node_id == null)
 			{
-				//System.out.println("Tried to remove missing node : " + pathname);
+				System.out.println("Tried to remove missing node : resource_id=" + resource_id + " inode_id=" + inode_id);
 				nodeRemoved = true; 
 			}
 			else
@@ -977,6 +977,96 @@ public class GraphDBEngine {
 		return nodeRemoved;
 		
 	}
+	
+	public boolean removeResourceNode(String resource_id)
+	{
+		boolean nodeRemoved = false;
+		int count = 0;
+		try
+		{
+			
+			while((!nodeRemoved) && (count != retryCount))
+			{
+				if(count > 0)
+				{
+					//System.out.println("REMOVENODE RETRY : region=" + region + " agent=" + agent + " plugin" + plugin);
+					Thread.sleep((long)(Math.random() * 1000)); //random wait to prevent sync error
+				}
+				nodeRemoved = IremoveResourceNode(resource_id);
+				count++;
+				
+			}
+			
+			if((!nodeRemoved) && (count == retryCount))
+			{
+				System.out.println("GraphDBEngine : removeResourceNode : Failed to add node in " + count + " retrys");
+			}
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : removeResourceNode : Error " + ex.toString());
+		}
+		
+		return nodeRemoved;
+	}
+	
+	
+	private boolean IremoveResourceNode(String resource_id)
+	{
+		boolean nodeRemoved = false;
+		OrientGraph graph = null;
+		try
+		{
+			//String pathname = getPathname(region,agent,plugin);
+			String node_id = getResourceNodeId(resource_id);
+			if(node_id == null)
+			{
+				System.out.println("Tried to remove missing node : resource_id=" + resource_id);
+				nodeRemoved = true; 
+			}
+			else
+			{
+				//remove iNodes First
+				List<String> inodes = getresourceNodeList(resource_id,null);
+				if(inodes != null)
+				{
+					for(String inode_id : inodes)
+					{
+						removeINode(resource_id,inode_id);
+					}
+				}
+				inodes = getresourceNodeList(resource_id,null);
+				if(inodes == null)
+				{
+					graph = factory.getTx();
+					Vertex resourceNode = graph.getVertex(node_id);
+					graph.removeVertex(resourceNode);
+					graph.commit();
+					nodeRemoved = true;
+				}
+				
+			}
+		}
+		catch(com.orientechnologies.orient.core.exception.OConcurrentModificationException exc)
+		{
+			//eat exception
+		}
+		catch(Exception ex)
+		{
+			long threadId = Thread.currentThread().getId();
+			System.out.println("GraphDBEngine : IremoveResourceNode :  thread_id: " + threadId + " Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return nodeRemoved;
+		
+	}
+	
 	
 	public boolean IsetINodeParams(String resource_id, String inode_id, Map<String,String> paramMap)
 	{
@@ -1387,10 +1477,6 @@ public class GraphDBEngine {
 	
 	//client DB
 	
-	
-	//end new database functions
-	
-	
 	public String getLowAgent()
 	{
 		String agent_path = null;
@@ -1463,6 +1549,7 @@ public class GraphDBEngine {
 		return null;
 		
 	}
+	
 	public String getPathname(String region, String agent, String plugin)
 	{
 		return region + "," + agent + "," + plugin;

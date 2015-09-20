@@ -29,12 +29,24 @@ public class SchedulerEngine implements Runnable {
 						//check the pipeline node
 						if(ce.getParam("globalcmd").equals("addplugin"))
 						{
-							
+							//do something to activate a plugin
+							if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","10")) &&
+									(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Active.")))
+							{
+									//recorded plugin activations
+							}
 						}
 						else if(ce.getParam("globalcmd").equals("removeplugin"))
 						{
 							System.out.println("Removing iNode: " + ce.getParam("inode_id"));
 							ControllerEngine.gdb.removeINode(ce.getParam("resource_id"),ce.getParam("inode_id"));
+							
+							//remove resource_id if this is the last resource
+							List<String> inodes = ControllerEngine.gdb.getresourceNodeList(ce.getParam("resource_id"),null);
+							if(inodes == null)
+							{
+								ControllerEngine.gdb.removeResourceNode(ce.getParam("resource_id"));
+							}
 						}
 					}
 					else
