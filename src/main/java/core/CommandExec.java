@@ -248,7 +248,7 @@ public class CommandExec {
 					{
 						if(ce.getParam("inode_id") != null)
 						{
-							if(ControllerEngine.gdb.addINode(ce.getParam("inode_id")))
+							if(ControllerEngine.gdb.addINode(ce.getParam("inode_id")) != null)
 							{
 								if((ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_code","0")) &&
 								(ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_desc","iNode Scheduled.")))
@@ -281,7 +281,7 @@ public class CommandExec {
 					{
 						if(ce.getParam("inode_id") != null)
 						{
-							if(ControllerEngine.gdb.isINode(ce.getParam("inode_id")))
+							if(ControllerEngine.gdb.getINodeId(ce.getParam("inode_id")) != null)
 							{
 								if((ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_code","10")) &&
 								(ControllerEngine.gdb.setINodeParam(ce.getParam("inode_id"),"status_desc","iNode scheduled for removal.")))
