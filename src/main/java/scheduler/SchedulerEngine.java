@@ -38,7 +38,15 @@ public class SchedulerEngine implements Runnable {
 							//do something to activate a plugin
 							System.out.println("starting precheck...");
 							String pluginJar = verifyPlugin(ce);
-							if(pluginJar != null)
+							if(pluginJar == null)
+							{
+								if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","1")) &&
+										(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Failed Activation : Plugin not found!")))
+								{
+									System.out.println("Provisioning Failed: No matching controller plugins found!");
+								}
+							}
+							else
 							{
 								//adding in jar name information
 								ce.setParam("configparams",ce.getParam("configparams") + ",jarfile=" + pluginJar);
@@ -79,15 +87,16 @@ public class SchedulerEngine implements Runnable {
 									}
 								}
 								
+								if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","10")) &&
+										(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Active.")))
+								{
+										//recorded plugin activations
+									
+								}
 							}
 							
 							
-							if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","10")) &&
-									(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Active.")))
-							{
-									//recorded plugin activations
-								
-							}
+							
 						}
 						else if(ce.getParam("globalcmd").equals("removeplugin"))
 						{
@@ -135,6 +144,7 @@ public class SchedulerEngine implements Runnable {
 		//check if we have the plugin
 		List<String> pluginMap = getPluginInventory();
 		String requestedPlugin = cm.get("pluginname") + "=" + cm.get("pluginversion");
+		System.out.println("Requested Plugin=" + requestedPlugin);
 		if(pluginMap.contains(requestedPlugin))
 		{
 			return getPluginFileMap().get(requestedPlugin);
@@ -283,6 +293,7 @@ public class SchedulerEngine implements Runnable {
 		        //System.out.println("Found Plugin: " + listOfFiles[i].getName());
 		        //<pluginName>=<pluginVersion>,
 		        String pluginPath = listOfFiles[i].getAbsolutePath();
+		        System.out.println("Found Plugin=" + ControllerEngine.commandExec.getPluginName(pluginPath) + "=" + ControllerEngine.commandExec.getPluginVersion(pluginPath));
 		        pluginList.add(ControllerEngine.commandExec.getPluginName(pluginPath) + "=" + ControllerEngine.commandExec.getPluginVersion(pluginPath));
 		        //pluginList = pluginList + getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath) + ",";
 		        //pluginList = pluginList + listOfFiles[i].getName() + ",";
