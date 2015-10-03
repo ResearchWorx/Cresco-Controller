@@ -497,12 +497,15 @@ public class CommandExec {
 				String region = null;
 				String agent = null;
 				String plugin = null;
-				String application = null;
+				String resource_id = null;
+				String inode_id = null;
 				
 				region = ce.getParam("src_region");
 				agent = ce.getParam("src_agent");
 				plugin = ce.getParam("src_plugin");
-				application = ce.getParam("application");
+				resource_id = ce.getParam("resource_id");
+				inode_id = ce.getParam("inode_id");
+				
 				//clean params for edge
 				/*
 				ce.removeParam("loop");
@@ -516,7 +519,7 @@ public class CommandExec {
 				*/
 				Map<String,String> params = ce.getParams();
 				
-				ControllerEngine.gdb.updatePerf(region, agent, plugin, application, params);
+				ControllerEngine.gdb.updatePerf(region, agent, plugin, resource_id, inode_id, params);
 				
 				ce.setMsgBody("updatedperf");
 				return ce;

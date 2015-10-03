@@ -221,6 +221,123 @@ public class GraphDBEngine {
 		return node_id;
 	}
 	
+	public String getIsAssignedEdgeId(String resource_id, String inode_id, String region, String agent)
+	{
+		String edge_id = null;
+		OrientGraph graph = null;
+		
+		try
+		{
+			if((resource_id != null) && (inode_id != null) && (region != null) && (agent != null))
+			{
+				//OrientGraph graph = factory.getTx();
+				//OrientGraphNoTx graph = factory.getNoTx();
+				graph = factory.getTx();
+				Iterable<Vertex> resultIterator = graph.command(new OCommandSQL("SELECT rid FROM INDEX:isAssigned.edgeProp WHERE key = [\""+ resource_id + "\",\""+ inode_id + "\",\"" + region + "\",\"" + agent +"\"]")).execute();
+			    Iterator<Vertex> iter = resultIterator.iterator();
+			    if(iter.hasNext())
+				{
+					Vertex v = iter.next();
+					edge_id = v.getProperty("rid").toString();
+				}
+				//graph.shutdown();
+				//return node_id.substring(node_id.indexOf("[") + 1, node_id.indexOf("]"));
+			    //node_id = node_id.substring(node_id.indexOf("[") + 1, node_id.indexOf("]"));
+			    if(edge_id != null)
+				{
+					edge_id = edge_id.substring(edge_id.indexOf("[") + 1, edge_id.indexOf("]"));
+				}
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getIsAssignedEdgeId : Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return edge_id;
+	}
+	
+	public String getIsAssignedEdgeId(String resource_id, String inode_id)
+	{
+		String edge_id = null;
+		OrientGraph graph = null;
+		
+		try
+		{
+			if((resource_id != null) && (inode_id != null))
+			{
+				//OrientGraph graph = factory.getTx();
+				//OrientGraphNoTx graph = factory.getNoTx();
+				graph = factory.getTx();
+				Iterable<Vertex> resultIterator = graph.command(new OCommandSQL("SELECT rid FROM INDEX:isAssigned.edgeProp WHERE key = [\""+ resource_id + "\",\""+ inode_id +"\"]")).execute();
+			    Iterator<Vertex> iter = resultIterator.iterator();
+			    if(iter.hasNext())
+				{
+					Vertex v = iter.next();
+					edge_id = v.getProperty("rid").toString();
+				}
+				//graph.shutdown();
+				//return node_id.substring(node_id.indexOf("[") + 1, node_id.indexOf("]"));
+			    //node_id = node_id.substring(node_id.indexOf("[") + 1, node_id.indexOf("]"));
+			    if(edge_id != null)
+				{
+					edge_id = edge_id.substring(edge_id.indexOf("[") + 1, edge_id.indexOf("]"));
+				}
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getIsAssignedEdgeId : Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return edge_id;
+	}
+	
+	
+	public String getIsAssignedParam(String edge_id,String param_name)
+	{
+		String param = null;
+		OrientGraph graph = null;
+		
+		try
+		{
+			if((edge_id != null) && (param_name != null))
+			{
+				graph = factory.getTx();
+				Edge e = graph.getEdge(edge_id);
+				param = e.getProperty(param_name).toString();	
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getIsAssignedParam : Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return param;
+	}
+	
+	
 	public List<String> getNodeList(String region, String agent, String plugin)
 	{
 		List<String> node_list = null;
@@ -406,6 +523,117 @@ public class GraphDBEngine {
 	}
 	
 	//WRITES
+
+	public String addIsAttachedEdge(String resource_id, String inode_id, String region, String agent, String plugin)
+	{
+		String edge_id = null;
+		
+		int count = 0;
+		try
+		{
+			
+			while((edge_id == null) && (count != retryCount))
+			{
+				if(count > 0)
+				{
+					//System.out.println("ADDNODE RETRY : region=" + region + " agent=" + agent + " plugin" + plugin);
+					Thread.sleep((long)(Math.random() * 1000)); //random wait to prevent sync error
+				}
+				edge_id = IaddIsAttachedEdge(resource_id, inode_id, region, agent, plugin);
+				count++;
+				
+			}
+			
+			if((edge_id == null) && (count == retryCount))
+			{
+				System.out.println("GraphDBEngine : addIsAttachedEdge : Failed to add edge in " + count + " retrys");
+			}
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : addIsAttachedEdge : Error " + ex.toString());
+		}
+		
+		return edge_id;
+	}
+
+	private String IaddIsAttachedEdge(String resource_id, String inode_id, String region, String agent, String plugin)
+	{
+		String edge_id = null;
+		OrientGraph graph = null;
+		try
+		{
+			edge_id = getIsAssignedEdgeId(resource_id,inode_id,region,agent);
+			
+			if(edge_id != null)
+			{
+				//System.out.println("Node already Exist: region=" + region + " agent=" + agent + " plugin=" + plugin);
+			}
+			else
+			{
+				
+				if((resource_id != null) && (inode_id != null) && (region != null) && (agent != null) && (plugin != null))
+				{
+					String inode_node_id = getINodeId(resource_id,inode_id);
+					String pnode_node_id = getNodeId(region,agent,plugin);
+					if((inode_node_id != null) && (pnode_node_id != null))
+					{
+						graph = factory.getTx();
+						
+						Vertex fromV = graph.getVertex(pnode_node_id);
+						Vertex toV = graph.getVertex(inode_node_id);
+						if((fromV != null) && (toV != null))
+						{
+							Edge e = graph.addEdge("class:isAssigned", fromV, toV, "isAssigned");
+							e.setProperty("resource_id", resource_id);
+							e.setProperty("inode_id", inode_id);
+							e.setProperty("region", region);
+							e.setProperty("agent", agent);
+							e.setProperty("plugin", plugin);
+							graph.commit();
+							edge_id = e.getId().toString();
+						}
+					}
+					else
+					{
+						if(inode_node_id != null)
+						{
+							System.out.println("IaddIsAttachedEdge: iNode does not exist : " + inode_id);
+						}
+						if(inode_node_id != null)
+						{
+							System.out.println("IaddIsAttachedEdge: pNode does not exist : " + region + agent + plugin);
+						}
+					}
+				}
+				
+			}
+			
+		}
+		catch(com.orientechnologies.orient.core.storage.ORecordDuplicatedException exc)
+		{
+			//eat exception.. this is not normal and should log somewhere
+		}
+		catch(com.orientechnologies.orient.core.exception.OConcurrentModificationException exc)
+		{
+			//eat exception.. this is normal
+		}
+		catch(Exception ex)
+		{
+			long threadId = Thread.currentThread().getId();
+			System.out.println("IaddIsAttachedEdge: thread_id: " + threadId + " Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return edge_id;
+		
+	}
+	
 	
 	public String addINode(String resource_id, String inode_id)
 	{
@@ -1414,6 +1642,10 @@ public class GraphDBEngine {
 		    String[] isResourceProps = {"edge_id"}; //Property names
 		    createEdgeClass("isResource",isResourceProps);
 		    
+		    System.out.println("Create isAssigned Edge Class");
+		    String[] isAssignedProps = {"resource_id","inode_id","region", "agent"}; //Property names
+		    createEdgeClass("isAssigned",isAssignedProps);
+		   
 			
 		}
 		catch(Exception ex)
@@ -1481,52 +1713,6 @@ public class GraphDBEngine {
 	
 	//client DB
 	
-	public String addAppNode(String application_name)
-	{
-		try
-		{
-			odb.begin();
-			String application_id = UUID.randomUUID().toString();
-			Vertex Application = odb.addVertex("class:Application");
-			Application.setProperty("application_id", application_id);
-			Application.setProperty("application_name", application_name);
-			odb.commit();
-			return application_id;
-		}
-		catch(Exception ex)
-		{
-			System.out.println("addAppNode: Error " + ex.toString());
-		}
-		return null;
-		
-	}
-	public String getAppNodeId(String application_name)
-	{
-		
-		try
-		{
-			
-			Vertex Application = odb.getVertexByKey("Application.application_name", application_name);
-			if(Application != null)
-			{
-				return Application.getProperty("application_id");
-			}
-			
-		}
-		catch(Exception ex)
-		{
-			System.out.println("getAppNodeId: Error " + ex.toString());
-		}
-		return null;
-		
-	}
-	
-	public String getPathname(String region, String agent, String plugin)
-	{
-		return region + "," + agent + "," + plugin;
-		
-	}
-	
 	
 	public String getNodeClass(String region, String agent, String plugin)
 	{
@@ -1553,106 +1739,121 @@ public class GraphDBEngine {
 		
 	}
 	
-	public boolean updateEdge(Edge edge, Map<String,String> params)
+	private boolean updateEdge(String edge_id, Map<String,String> params)
 	{
+		boolean isUpdated = false;
+		int count = 0;
 		try
 		{
-			if(edge != null)
-			{
-				odb.begin();
-				
-				for (Map.Entry<String, String> entry : params.entrySet())
-				{
-				    edge.setProperty(entry.getKey(), entry.getValue());
-				}
-				odb.commit();
 			
-				return true;
+			while((!isUpdated) && (count != retryCount))
+			{
+				if(count > 0)
+				{
+					//System.out.println("ADDNODE RETRY : region=" + region + " agent=" + agent + " plugin" + plugin);
+					Thread.sleep((long)(Math.random() * 1000)); //random wait to prevent sync error
+				}
+				isUpdated = IupdateEdge(edge_id, params);
+				count++;
+				
+			}
+			
+			if((!isUpdated) && (count == retryCount))
+			{
+				System.out.println("GraphDBEngine : updateEdge : Failed to update edge in " + count + " retrys");
 			}
 		}
 		catch(Exception ex)
 		{
-			System.out.println("updateEdge: Error " + ex.toString());
+			System.out.println("GraphDBEngine : updateEdge : Error " + ex.toString());
 		}
-		return false;
+		
+		return isUpdated;
+	}
+
+	private boolean IupdateEdge(String edge_id, Map<String,String> params)
+	{
+		boolean isUpdated = false;
+		OrientGraph graph = null;
+		try
+		{
+			graph = factory.getTx();
+			Edge edge = graph.getEdge(edge_id);
+			if(edge != null)
+			{
+				for (Map.Entry<String, String> entry : params.entrySet())
+				{
+				    edge.setProperty(entry.getKey(), entry.getValue());
+				}
+				graph.commit();
+				isUpdated = true;
+			}
+			else
+			{
+				System.out.println("IupdateEdge: no edge found for edge_id=" + edge_id);
+			}
+			
+		}
+		catch(com.orientechnologies.orient.core.storage.ORecordDuplicatedException exc)
+		{
+			//eat exception.. this is not normal and should log somewhere
+		}
+		catch(com.orientechnologies.orient.core.exception.OConcurrentModificationException exc)
+		{
+			//eat exception.. this is normal
+		}
+		catch(Exception ex)
+		{
+			long threadId = Thread.currentThread().getId();
+			System.out.println("IupdateEdge: thread_id: " + threadId + " Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return isUpdated;
+		
 	}
 	
-	public boolean updatePerf(String region, String agent, String plugin, String application, Map<String,String> params)
+	public boolean updatePerf(String region, String agent, String plugin, String resource_id, String inode_id, Map<String,String> params)
 	{
+		boolean isUpdated = false;
+		String edge_id = null;
 		try
    	 	{ 
-			
-			
-			//precheck input
-			String node_class = getNodeClass(region,agent,plugin);
-			if(node_class == null)
+			//check if edge is found, if not create it
+			edge_id = getIsAssignedEdgeId(resource_id, inode_id, region, agent);
+			if(edge_id == null)
 			{
-				System.out.println("GraphDBEngine : updatePerf : Null nodeClass:" + region + " Agent:" + agent + " Plugin:" + plugin);	
-				return false;
+				edge_id = addIsAttachedEdge(resource_id, inode_id, region, agent, plugin);
 			}
-			if(!node_class.equals("pNode"))
+			//check again if edge is found
+			if(edge_id != null)
 			{
-				System.out.println("GraphDBEngine : updatePerf : nodeClass != pNode:" + region + " Agent:" + agent + " Plugin:" + plugin);	
-				return false;
+				if(updateEdge(edge_id, params))
+				{
+					isUpdated = true;
+				}
+				else
+				{
+					System.out.println("Controller : GraphDBEngine : Failed to updatePerf : Failed to update Edge params!");
+				}
+			}
+			else
+			{
+				System.out.println("Controller : GraphDBEngine : Failed to updatePerf : edge_id not found!");
 			}
 			
-			//check if app-node-path is in cache
-			String appPath = application + "," + region + "," + agent + "," + plugin;
-			
-				//appPathEdge was no found.. created it
-				//first check that the pNodeid exist
-				
-				String node_id = getNodeId(region,agent,plugin);
-				if(node_id == null)
-				{
-					System.out.println("GraphDBEngine : updatePerf : Tried to updatePerf before node_id was created:" + region + " Agent:" + agent + " Plugin:" + plugin);	
-					return false;
-				}
-			
-				//second check that the application exist
-				
-				String application_id = getAppNodeId(application);
-				if(application_id == null)
-				{
-					//create application
-					application_id = addAppNode(application);
-				}
-				//make sure edge exist between pNode and Application
-				Vertex Application = odb.getVertexByKey("Application.application_id", application_id);
-				
-				Iterable<Edge> agentEdges = Application.getEdges(Direction.IN, "isConnected");
-				
-				Iterator<Edge> iter = agentEdges.iterator();
-				while (iter.hasNext())
-				{
-					Edge isConnected = iter.next();
-					Vertex pNode = isConnected.getVertex(Direction.OUT);
-					String pNode_id = pNode.getProperty("node_id");
-					if(pNode_id.equals(node_id))
-					{
-						//ok you have both a know app link and pNode : you can update the edge
-						if(updateEdge(isConnected,params))
-						{
-							//we have found the Edge, cache it
-							//if edge was updated return true;
-							return true;
-						}
-					}
-					
-				}
-				//looks like the Edge does not exist, create it
-				//grab the pNode Vertex
-				Vertex pNode = odb.getVertexByKey("pNode.node_id", node_id);
-				odb.commit();
-				
-		
    	 	}
 		catch(Exception ex)
 		{
 			System.out.println("Controller : GraphDBEngine : Failed to updatePerf");
 		
 		}
-		return false;
+		return isUpdated;
 	}
 			
 

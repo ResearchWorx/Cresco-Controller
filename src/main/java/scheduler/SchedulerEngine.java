@@ -64,7 +64,8 @@ public class SchedulerEngine implements Runnable {
 									String[] agentPath_s = agentPath.split(",");
 									String region = agentPath_s[0];
 									String agent = agentPath_s[1];
-									
+									String resource_id = ce.getParam("resource_id");
+									String inode_id = ce.getParam("inode_id");
 									//have agent download plugin
 									String pluginurl = "http://127.0.0.1:32003/";
 									downloadPlugin(region,agent,pluginJar,pluginurl, false);
@@ -76,23 +77,18 @@ public class SchedulerEngine implements Runnable {
 									MsgEvent me = addPlugin(region,agent,ce.getParam("configparams"));
 									System.out.println("pluginadd message: " + me.getParamsString());
 									
-									MsgEvent ee = ControllerEngine.commandExec.cmdExec(me);
-									if(ee != null)
-									{
-										System.out.println("pluginadd message return : " + ee.getParamsString());
-									}
-									else
-									{
-										System.out.println("pluginadd message return was null ");
-									}
+									ControllerEngine.commandExec.cmdExec(me);
+									new Thread(new PollAddPlugin(resource_id, inode_id,region,agent)).start();
 								}
 								
+								/*
 								if((ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_code","10")) &&
 										(ControllerEngine.gdb.setINodeParam(ce.getParam("resource_id"),ce.getParam("inode_id"),"status_desc","iNode Active.")))
 								{
 										//recorded plugin activations
 									
 								}
+								*/
 							}
 							
 							
@@ -100,15 +96,7 @@ public class SchedulerEngine implements Runnable {
 						}
 						else if(ce.getParam("globalcmd").equals("removeplugin"))
 						{
-							System.out.println("Removing iNode: " + ce.getParam("inode_id"));
-							ControllerEngine.gdb.removeINode(ce.getParam("resource_id"),ce.getParam("inode_id"));
-							
-							//remove resource_id if this is the last resource
-							List<String> inodes = ControllerEngine.gdb.getresourceNodeList(ce.getParam("resource_id"),null);
-							if(inodes == null)
-							{
-								ControllerEngine.gdb.removeResourceNode(ce.getParam("resource_id"));
-							}
+							new Thread(new PollRemovePlugin(ce.getParam("resource_id"),ce.getParam("inode_id"))).start();
 						}
 					}
 					else
@@ -127,7 +115,6 @@ public class SchedulerEngine implements Runnable {
 			System.out.println("SchedulerEngine Error: " + ex.toString());
 		}
 	}
-	
 	
 	private String verifyPlugin(MsgEvent ce)
 	{
@@ -239,7 +226,7 @@ public class SchedulerEngine implements Runnable {
 
         return sortedMap;
     }
-
+	
 	public MsgEvent addPlugin(String region, String agent, String configParams)
 	{
 		MsgEvent me = new MsgEvent(MsgEventType.CONFIG,region,null,null,"add plugin");
@@ -361,7 +348,8 @@ public class SchedulerEngine implements Runnable {
 		return null; 
 		
 	}
-	
-	
 		
 }
+
+
+
