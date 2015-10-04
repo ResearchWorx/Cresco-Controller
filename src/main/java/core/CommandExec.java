@@ -324,6 +324,47 @@ public class CommandExec {
 							
 						return ce;
 					}
+					else if(ce.getParam("globalcmd").equals("plugininfo"))
+					{
+						try
+						{
+							if(ce.getParam("plugin_id") != null)
+							{
+								String plugin_id = ce.getParam("plugin_id");
+								List<String> pluginFiles = getPluginFiles();
+							
+								if(pluginFiles != null)
+								{
+									for (String pluginPath : pluginFiles) 
+									{
+										String found_plugin_id = getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath);
+										if(plugin_id.equals(found_plugin_id))
+										{
+											String params = getPluginParams(pluginPath);
+											if(params != null)
+											{
+												System.out.println("Found Plugin: " + plugin_id);
+												ce.setParam("node_name",getPluginName(pluginPath));
+												ce.setParam("node_id",plugin_id);
+												ce.setParam("params",params);
+											}
+											
+										}
+									}
+								}
+								else
+								{
+									ce.setMsgBody("Plugin does not exist");
+								}
+							}
+						}
+						catch(Exception ex)
+						{
+							System.out.println(ex.toString());
+							ce.setMsgBody("Error: " + ex.toString());
+						}
+						return ce;   
+					}
 					else if(ce.getParam("globalcmd").equals("getenvstatus"))
 					{
 						try
@@ -385,39 +426,24 @@ public class CommandExec {
 					{
 						try
 						{
-						String pluginList = "";
-						File jarLocation = new File(ControllerEngine.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-						String parentDirName = jarLocation.getParent(); // to get the parent dir name
-						
-						File folder = new File(parentDirName + "/plugins");
-						if(folder.exists())
-						{
-						File[] listOfFiles = folder.listFiles();
-
-						    for (int i = 0; i < listOfFiles.length; i++) 
-						    {
-						      if (listOfFiles[i].isFile()) 
-						      {
-						        System.out.println("Found Plugin: " + listOfFiles[i].getName());
-						        //<pluginName>=<pluginVersion>,
-						        String pluginPath = listOfFiles[i].getAbsolutePath();
-						        pluginList = pluginList + getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath) + ",";
-						        //pluginList = pluginList + listOfFiles[i].getName() + ",";
-						      } 
-						      
-						    }
-						    if(pluginList.length() > 0)
-						    {
-						    	pluginList = pluginList.substring(0, pluginList.length() - 1);
-						    	System.out.println("pluginList=" + pluginList);
-							    ce.setParam("pluginlist", pluginList);
-						    }
-						    ce.setMsgBody("There were " + listOfFiles.length + " plugins found.");
-						}
-						else
-						{
-							ce.setMsgBody("No plugin directory exist to inventory");
-						}
+							List<String> pluginFiles = getPluginFiles();
+							
+							if(pluginFiles != null)
+							{
+								String pluginList = null;
+								for (String pluginPath : pluginFiles) 
+								{
+									pluginList = pluginList + getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath) + ",";
+								}
+								pluginList = pluginList.substring(0, pluginList.length() - 1);
+								System.out.println("pluginList=" + pluginList);
+								ce.setParam("pluginlist", pluginList);
+								ce.setMsgBody("There were " + pluginFiles.size() + " plugins found.");
+							}
+							else
+							{
+								ce.setMsgBody("No plugin directory exist to inventory");
+							}
 						}
 						catch(Exception ex)
 						{
@@ -579,7 +605,8 @@ public class CommandExec {
 			   }
 			   return version;
 	}
-	public static Map<String,String> getParamMap(String jarFileName)
+	
+	public static Map<String,String> getPluginParamMap(String jarFileName)
 	{
 		Map<String,String> phm = null;
 		try 
@@ -594,7 +621,7 @@ public class CommandExec {
             {
               	line = line.replaceAll("\\s+","");
               	String[] sline = line.split("=");
-               	if((sline[0] != null) && (sline[0] != null))
+               	if((sline[0] != null) && (sline[1] != null))
               	{
                		phm.put(sline[0], sline[1]);
                 }
@@ -608,6 +635,53 @@ public class CommandExec {
             e.printStackTrace();
         }
 		return phm;
+	}
+	
+	public static String getPluginParams(String jarFileName)
+	{
+		String params = "";
+		try 
+		{
+			JarFile jarFile = new JarFile(jarFileName);
+            JarEntry je = jarFile.getJarEntry("plugin.conf");
+            InputStream in = jarFile.getInputStream(je);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            String line;
+            while ((line = reader.readLine()) != null) 
+            {
+              	line = line.replaceAll("\\s+","");
+              	String[] sline = line.split("=");
+               	if((sline[0] != null) && (sline[1] != null))
+              	{
+               		//phm.put(sline[0], sline[1]);
+               		if(sline[1].equals("required"))
+               		{
+               			params = params + sline[0] + ":" + sline[1] + ",";
+               		}
+               		else if(sline[1].equals("optional"))
+               		{
+               			params = params + sline[0] + ":,";
+               		}
+                }
+            }
+            reader.close();
+            in.close();
+            jarFile.close();
+            if(params.length() == 0)
+            {
+            	params = null;
+            }
+            else
+            {
+            	params = params.substring(0,params.length() -1);
+            }
+        } 
+		catch (IOException e) 
+		{
+			params = null;
+            e.printStackTrace();
+        }
+		return params;
 	}
 	
 	public static String getPluginVersion(String jarFile) //This should pull the version information from jar Meta data
@@ -634,7 +708,43 @@ public class CommandExec {
 			   }
 			   return version;
 	}
-	
+	public static List<String> getPluginFiles()
+	{
+		List<String> pluginFiles = null;
+		try
+		{
+			//String pluginList = "";
+			File jarLocation = new File(ControllerEngine.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+			String parentDirName = jarLocation.getParent(); // to get the parent dir name
+		
+			File folder = new File(parentDirName + "/plugins");
+			if(folder.exists())
+			{
+				pluginFiles = new ArrayList<String>();
+				File[] listOfFiles = folder.listFiles();
+
+				for (int i = 0; i < listOfFiles.length; i++) 
+				{
+					if (listOfFiles[i].isFile()) 
+					{
+						pluginFiles.add(listOfFiles[i].getAbsolutePath());
+					} 
+		      
+				}
+				if(pluginFiles.isEmpty())
+				{
+					pluginFiles = null;
+				}
+			}
+		
+		}
+		catch(Exception ex)
+		{
+			System.out.println(ex.toString());
+			pluginFiles = null;
+		}
+		return pluginFiles;
+	}
 	
 	
 }
