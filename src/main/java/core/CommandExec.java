@@ -1,8 +1,12 @@
 package core;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -12,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
@@ -318,6 +324,30 @@ public class CommandExec {
 							
 						return ce;
 					}
+					else if(ce.getParam("globalcmd").equals("getenvstatus"))
+					{
+						try
+						{
+							if((ce.getParam("environment_id") != null) && (ce.getParam("environment_value") != null))
+							{
+								String indexName = ce.getParam("environment_id");
+								String indexValue = ce.getParam("environment_value");
+								
+								List<String> envNodeList = ControllerEngine.gdb.getANodeFromIndex(indexName, indexValue);
+								ce.setParam("count",String.valueOf(envNodeList.size()));
+							}
+							else
+							{
+								ce.setParam("count","unknown");
+							}					
+							
+						}
+						catch(Exception ex)
+						{
+							ce.setParam("count","unknown");
+						}
+						return ce;
+					}
 					else if(ce.getParam("globalcmd").equals("getpluginstatus"))
 					{
 						try
@@ -395,8 +425,6 @@ public class CommandExec {
 							ce.setMsgBody("Error: " + ex.toString());
 						}
 						return ce;   
-						 
-						
 					}
 					else if(ce.getParam("globalcmd").equals("plugindownload"))
 					{
@@ -550,6 +578,36 @@ public class CommandExec {
 				   version = "Unable to determine Version";
 			   }
 			   return version;
+	}
+	public static Map<String,String> getParamMap(String jarFileName)
+	{
+		Map<String,String> phm = null;
+		try 
+		{
+			phm = new HashMap<String,String>();
+	        JarFile jarFile = new JarFile(jarFileName);
+            JarEntry je = jarFile.getJarEntry("plugin.conf");
+            InputStream in = jarFile.getInputStream(je);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            String line;
+            while ((line = reader.readLine()) != null) 
+            {
+              	line = line.replaceAll("\\s+","");
+              	String[] sline = line.split("=");
+               	if((sline[0] != null) && (sline[0] != null))
+              	{
+               		phm.put(sline[0], sline[1]);
+                }
+            }
+            reader.close();
+            in.close();
+            jarFile.close();
+        } 
+		catch (IOException e) 
+		{
+            e.printStackTrace();
+        }
+		return phm;
 	}
 	
 	public static String getPluginVersion(String jarFile) //This should pull the version information from jar Meta data

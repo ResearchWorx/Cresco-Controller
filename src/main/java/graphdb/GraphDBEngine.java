@@ -30,6 +30,7 @@ public class GraphDBEngine {
 	private OrientGraph odb;
 	//public Cache<String, String> nodePathCache;
 	//public Cache<String, Edge> appPathCache;
+	public String[] aNodeIndexParams = {"platform","environment","location"};
 	
 	public int retryCount = 50;
 	
@@ -102,6 +103,47 @@ public class GraphDBEngine {
 		}
 		return node_id;
 	}
+	
+	public List<String> getANodeFromIndex(String indexName, String indexValue)
+	{
+		List<String> nodeList = null;
+		OrientGraph graph = null;
+		try
+		{
+			nodeList = new ArrayList<String>();
+			graph = factory.getTx();
+			
+			Iterable<Vertex> resultIterator = graph.command(new OCommandSQL("SELECT rid FROM INDEX:aNode." + indexName + " WHERE key = '" + indexValue + "'")).execute();
+					
+			Iterator<Vertex> iter = resultIterator.iterator();
+			while(iter.hasNext())
+			//if(iter.hasNext())
+			{
+				Vertex v = iter.next();
+				String node_id = v.getProperty("rid").toString();
+				if(node_id != null)
+				{
+					node_id = node_id.substring(node_id.indexOf("[") + 1, node_id.indexOf("]"));
+					nodeList.add(node_id);
+				}
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getANodeFromIndex : Error " + ex.toString());
+			nodeList = null;
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return nodeList;
+	}
+	
 	
 	public String getResourceNodeId(String resource_id)
 	{
@@ -536,7 +578,6 @@ public class GraphDBEngine {
 			{
 				if(count > 0)
 				{
-					//System.out.println("ADDNODE RETRY : region=" + region + " agent=" + agent + " plugin" + plugin);
 					Thread.sleep((long)(Math.random() * 1000)); //random wait to prevent sync error
 				}
 				edge_id = IaddIsAttachedEdge(resource_id, inode_id, region, agent, plugin);
@@ -647,7 +688,6 @@ public class GraphDBEngine {
 			{
 				if(count > 0)
 				{
-					//System.out.println("ADDNODE RETRY : region=" + region + " agent=" + agent + " plugin" + plugin);
 					Thread.sleep((long)(Math.random() * 1000)); //random wait to prevent sync error
 				}
 				node_id = IaddINode(resource_id, inode_id);
@@ -1412,6 +1452,7 @@ public class GraphDBEngine {
 	
 	public boolean IsetNodeParams(String region, String agent, String plugin, Map<String,String> paramMap)
 	{
+		
 		boolean isUpdated = false;
 		OrientGraph graph = null;
 		String node_id = null;
@@ -1426,7 +1467,7 @@ public class GraphDBEngine {
 				while (it.hasNext()) 
 				{
 					Map.Entry pairs = (Map.Entry)it.next();
-					iNode.setProperty( pairs.getKey().toString(), pairs.getValue().toString());
+					iNode.setProperty( pairs.getKey().toString(), pairs.getValue().toString());					
 				}
 				graph.commit();
 				isUpdated = true;
@@ -1571,6 +1612,22 @@ public class GraphDBEngine {
 			{
 				graph = factory.getTx();
 				Vertex iNode = graph.getVertex(node_id);
+				//set envparams if aNode
+				if((paramKey.equals("configparams")) && (region != null) && (agent != null) && (plugin == null))
+				{
+					String[] configParams = paramValue.split(",");
+					for(String cParam : configParams)
+					{
+						String[] cPramKV = cParam.split("="); 
+						for(String indexParam : aNodeIndexParams)
+						{
+							if(cPramKV[0].equals(indexParam))
+							{
+								iNode.setProperty(cPramKV[0],cPramKV[1]);
+							}
+						}
+					}
+				}
 				iNode.setProperty( paramKey, paramValue);
 				graph.commit();
 				isUpdated = true;
@@ -1609,9 +1666,18 @@ public class GraphDBEngine {
 			System.out.println("Create Region Vertex Class");
 			String[] rProps = {"region"}; //Property names
 			createVertexClass("rNode", rProps);
+			
 			System.out.println("Create Agent Vertex Class");
 			String[] aProps = {"region", "agent"}; //Property names
 			createVertexClass("aNode", aProps);
+			
+			//indexes for searching
+			System.out.println("Create Agent Vertex Class Index's");
+			for(String indexName : aNodeIndexParams)
+			{
+				createVertexIndex("aNode", indexName, false);
+			}
+			
 			System.out.println("Create Plugin Vertex Class");
 			String[] pProps = {"region", "agent", "plugin"}; //Property names
 			createVertexClass("pNode", pProps);
@@ -1653,6 +1719,66 @@ public class GraphDBEngine {
 			System.out.println("initCrescoDB Error: " + ex.toString());
 		}
 	}
+	boolean createVertexIndex(String className, String indexName, boolean isUnique) 
+	{
+		boolean wasCreated = false;
+		OrientGraphNoTx txGraph = factory.getNoTx();
+        //OSchema schema = ((OrientGraph)odb).getRawGraph().getMetadata().getSchema();
+        OSchema schema = ((OrientGraphNoTx)txGraph).getRawGraph().getMetadata().getSchema();
+        
+        if (schema.existsClass(className)) 
+        {
+        	OClass vt = txGraph.getVertexType(className);
+        	//OClass vt = txGraph.createVertexType(className);
+        		
+        			vt.createProperty(indexName, OType.STRING);
+        		
+        		if(isUnique)
+        		{
+        			vt.createIndex(className + "." + indexName, OClass.INDEX_TYPE.UNIQUE, indexName);
+        		}
+        		else
+        		{
+        			vt.createIndex(className + "." + indexName, OClass.INDEX_TYPE.NOTUNIQUE, indexName);
+        		}
+        	
+        	wasCreated = true;
+        }
+        txGraph.commit();
+        txGraph.shutdown();
+        return wasCreated;
+    }
+	
+	boolean createVertexIndex(String className, String[] props, String indexName, boolean isUnique) 
+	{
+		boolean wasCreated = false;
+		OrientGraphNoTx txGraph = factory.getNoTx();
+        //OSchema schema = ((OrientGraph)odb).getRawGraph().getMetadata().getSchema();
+        OSchema schema = ((OrientGraphNoTx)txGraph).getRawGraph().getMetadata().getSchema();
+        
+        if (schema.existsClass(className)) 
+        {
+        	OClass vt = txGraph.getVertexType(className);
+        	//OClass vt = txGraph.createVertexType(className);
+        		for(String prop : props)
+        		{
+        			vt.createProperty(prop, OType.STRING);
+        		}
+        		if(isUnique)
+        		{
+        			vt.createIndex(className + "." + indexName, OClass.INDEX_TYPE.UNIQUE, props);
+        		}
+        		else
+        		{
+        			vt.createIndex(className + "." + indexName, OClass.INDEX_TYPE.NOTUNIQUE, props);
+        		}
+        	
+        	wasCreated = true;
+        }
+        txGraph.commit();
+        txGraph.shutdown();
+        return wasCreated;
+    }
 	
 	boolean createVertexClass(String className, String[] props) 
 	{
@@ -1666,22 +1792,9 @@ public class GraphDBEngine {
         	OClass vt = txGraph.createVertexType(className);
         	for(String prop : props)
         		  vt.createProperty(prop, OType.STRING);
-        	//Create unique composite index using all properties
         	vt.createIndex(className + ".nodePath", OClass.INDEX_TYPE.UNIQUE, props);
         	
-        	//txGraph.createKeyIndex(key, Vertex.class, new Parameter("type", "UNIQUE"), new Parameter("class", className));
         	wasCreated = true;
-        }
-        else
-        {
-        	/*
-        	OClass vt = txGraph.getVertexType(className);
-        	for(String prop : props)
-      		  vt.createProperty(prop, OType.STRING);
-        	//Create unique composite index using all properties
-        	vt.createIndex(className + ".nodePath", OClass.INDEX_TYPE.UNIQUE, props);
-        	wasCreated = true;
-        	*/
         }
         txGraph.commit();
         txGraph.shutdown();
