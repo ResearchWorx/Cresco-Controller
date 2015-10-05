@@ -650,19 +650,18 @@ public class CommandExec {
             while ((line = reader.readLine()) != null) 
             {
               	line = line.replaceAll("\\s+","");
-              	String[] sline = line.split("=");
-               	if((sline[0] != null) && (sline[1] != null))
+              	if(line.contains("="))
               	{
-               		//phm.put(sline[0], sline[1]);
-               		if(sline[1].equals("required"))
-               		{
-               			params = params + sline[0] + ":" + sline[1] + ",";
-               		}
-               		else if(sline[1].equals("optional"))
-               		{
-               			params = params + sline[0] + ":,";
-               		}
-                }
+              		String[] sline = line.split("=");
+              		if((sline[0] != null) && (sline[1] != null))
+              		{
+              			//phm.put(sline[0], sline[1]);
+              			if((sline[1].equals("required")) || sline[1].equals("optional"))
+              			{
+              				params = params + sline[0] + ":" + sline[1] + ",";
+              			}
+              		}
+              	}
             }
             reader.close();
             in.close();
