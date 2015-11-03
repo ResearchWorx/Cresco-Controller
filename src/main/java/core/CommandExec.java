@@ -450,17 +450,21 @@ public class CommandExec {
 						try
 						{
 							List<String> pluginFiles = getPluginFiles();
-							for (String pluginPath : pluginFiles) 
-							{
-								System.out.println(pluginPath);
-							}
+							
 							
 							if(pluginFiles != null)
 							{
-								String pluginList = null;
+								String pluginList = null;;
 								for (String pluginPath : pluginFiles) 
 								{
-									pluginList = pluginList + getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath) + ",";
+									if(pluginList == null)
+									{
+										pluginList = getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath) + ",";
+									}
+									else
+									{
+										pluginList = pluginList + getPluginName(pluginPath) + "=" + getPluginVersion(pluginPath) + ",";
+									}
 								}
 								pluginList = pluginList.substring(0, pluginList.length() - 1);
 								System.out.println("pluginList=" + pluginList);
