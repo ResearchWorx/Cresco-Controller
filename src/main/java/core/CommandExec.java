@@ -69,7 +69,7 @@ public class CommandExec {
 						{
 							ce.setMsgBody("updating controller");
 							//Process p=Runtime.getRuntime().exec("cmd.exe /c ping 127.0.0.1 -n 10");
-							String[] cmd = {"sh", "(sleep 10; service cresco-controller upgrade) &"};
+							String[] cmd = {"sh", "(sleep 10; /usr/sbin/service/service /etc/init.d/cresco-controller upgrade) &"};
 							Process p=Runtime.getRuntime().exec(cmd);
 							
 							//Process p=Runtime.getRuntime().exec("(sleep 10; service cresco-controller upgrade) &");
