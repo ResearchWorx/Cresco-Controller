@@ -422,6 +422,29 @@ public class CommandExec {
 						}
 						return ce;
 					}
+					else if(ce.getParam("globalcmd").equals("resourceinventory"))
+					{
+						try
+						{
+							String rt = ControllerEngine.se.getResourceTotal();
+							
+							if(rt != null)
+							{
+								ce.setParam("resourceinventory", rt);
+								ce.setMsgBody("Inventory found.");
+							}
+							else
+							{
+								ce.setMsgBody("No plugin directory exist to inventory");
+							}
+						}
+						catch(Exception ex)
+						{
+							System.out.println(ex.toString());
+							ce.setMsgBody("Error: " + ex.toString());
+						}
+						return ce;   
+					}
 					else if(ce.getParam("globalcmd").equals("plugininventory"))
 					{
 						try
@@ -727,6 +750,7 @@ public class CommandExec {
 					if (listOfFiles[i].isFile()) 
 					{
 						pluginFiles.add(listOfFiles[i].getAbsolutePath());
+						//System.out.println(listOfFiles[i].toPath());
 					} 
 		      
 				}

@@ -144,6 +144,91 @@ public class SchedulerEngine implements Runnable {
 		return null;
 	}
 	
+	public Map<String,String> paramStringToMap(String param)
+	{
+		Map<String,String> params = null;
+		try
+		{
+			params = new HashMap<String,String>();
+			String[] pstr = param.split(",");
+			for(String str : pstr)
+			{
+				String[] pstrs = str.split("=");
+				params.put(pstrs[0], pstrs[1]);
+			}
+		}
+		catch(Exception ex)
+		{
+			System.out.println("SchedulerEngine : Error " + ex.toString());
+		}
+		return params;
+	}
+	
+	public String getResourceTotal()
+	{
+		int cpu_count = 0;
+		long memoryAvailable = 0;
+		long diskAvailable = 0;
+		
+		try
+		{
+			List<String> regionList = ControllerEngine.gdb.getNodeList(null,null,null);
+			//Map<String,Map<String,String>> ahm = new HashMap<String,Map<String,String>>();
+			//System.out.println("Region Count: " + regionList.size());
+			Map<String,String> rMap = new HashMap<String,String>();
+			for(String region : regionList)
+			{
+				List<String> agentList = ControllerEngine.gdb.getNodeList(region,null,null);
+				//System.out.println("Agent Count: " + agentList.size());
+				
+				for(String agent: agentList)
+				{
+					List<String> pluginList = ControllerEngine.gdb.getNodeList(region,agent,null);
+					boolean isRecorded = false;
+					for(String plugin : pluginList)
+					{
+						if(!isRecorded)
+						{
+							String pluginConfigparams = ControllerEngine.gdb.getNodeParam(region, agent, plugin, "configparams");
+							Map<String,String> pMap =  paramStringToMap(pluginConfigparams);
+							if(pMap.get("pluginname").equals("cresco-agent-sysinfo-plugin"))
+							{
+								System.out.println("region=" + region +" agent=" + agent);
+								String agent_path = region + "_" + agent;
+								String agentConfigparams = ControllerEngine.gdb.getNodeParam(region, agent, null, "configparams");
+								Map<String,String> aMap =  paramStringToMap(agentConfigparams);
+								String resourceKey = aMap.get("platform") + "_" + aMap.get("environment") + "_" + aMap.get("location");
+							
+								for(Entry<String, String> entry : pMap.entrySet()) 
+								{
+									String key = entry.getKey();
+									String value = entry.getValue();
+									System.out.println("\t" + key + ":" + value);
+								}
+								isRecorded = true;
+							}
+						}	
+					}
+					
+				}
+			}
+			System.out.println("Total CPU core count : " + cpu_count);
+			System.out.println("Total Memory count : " + memoryAvailable);
+			System.out.println("Total Disk space : " + diskAvailable);
+			
+			
+			
+	        
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getResourceTotal() : Error " + ex.toString());
+		}
+		
+		return "woot";
+	}
+
+	
 	public String getLowAgent()
 	{
 		

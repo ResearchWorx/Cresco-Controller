@@ -144,7 +144,6 @@ public class GraphDBEngine {
 		return nodeList;
 	}
 	
-	
 	public String getResourceNodeId(String resource_id)
 	{
 		String node_id = null;
@@ -349,7 +348,6 @@ public class GraphDBEngine {
 		return edge_id;
 	}
 	
-	
 	public String getIsAssignedParam(String edge_id,String param_name)
 	{
 		String param = null;
@@ -378,7 +376,6 @@ public class GraphDBEngine {
 		}
 		return param;
 	}
-	
 	
 	public List<String> getNodeList(String region, String agent, String plugin)
 	{
@@ -563,6 +560,98 @@ public class GraphDBEngine {
 		}
 		return iNode_param;
 	}
+	
+	public String getNodeParam(String node_id, String param)
+	{
+		String paramVal = null;
+		
+		int count = 0;
+		try
+		{
+			
+			while((paramVal == null) && (count != retryCount))
+			{
+				if(count > 0)
+				{
+					Thread.sleep((long)(Math.random() * 1000)); //random wait to prevent sync error
+				}
+				paramVal = IgetNodeParam(node_id,param);
+				count++;
+				
+			}
+			
+			if((paramVal == null) && (count == retryCount))
+			{
+				System.out.println("GraphDBEngine : getNodeParam : Failed to add node in " + count + " retrys");
+			}
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getNodeParam : Error " + ex.toString());
+		}
+		
+		return paramVal;
+	}
+	
+	public String getNodeParam(String region, String agent, String plugin, String param)
+	{
+		String paramVal = null;
+		String node_id  = getNodeId(region,agent,plugin);
+		
+		int count = 0;
+		try
+		{
+			
+			while((paramVal == null) && (count != retryCount))
+			{
+				if(count > 0)
+				{
+					Thread.sleep((long)(Math.random() * 1000)); //random wait to prevent sync error
+				}
+				paramVal = IgetNodeParam(node_id,param);
+				count++;
+				
+			}
+			
+			if((paramVal == null) && (count == retryCount))
+			{
+				System.out.println("GraphDBEngine : getNodeParam : Failed to add node in " + count + " retrys");
+			}
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getNodeParam : Error " + ex.toString());
+		}
+		
+		return paramVal;
+	}
+	
+	public String IgetNodeParam(String node_id, String param)
+	{
+		String node_param = null;
+		OrientGraph graph = null;
+		
+		try
+		{
+				graph = factory.getTx();
+				Vertex iNode = graph.getVertex(node_id);
+				node_param = iNode.getProperty(param).toString();
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("IgetNodeParam: Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return node_param;
+	}
+	
 	
 	//WRITES
 
