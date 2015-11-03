@@ -450,6 +450,10 @@ public class CommandExec {
 						try
 						{
 							List<String> pluginFiles = getPluginFiles();
+							for (String pluginPath : pluginFiles) 
+							{
+								System.out.println(pluginPath);
+							}
 							
 							if(pluginFiles != null)
 							{
