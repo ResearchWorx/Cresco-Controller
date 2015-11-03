@@ -29,13 +29,6 @@ public class ControllerEngine {
 	
 	public static void main(String[] args) throws Exception 
 	{
-		commandExec = new CommandExec(); //create command channel
-		
-		gdb = new GraphDBEngine(); //create graphdb connector
-		
-		regionalMsgMap = new ConcurrentHashMap<String,ConcurrentLinkedQueue<MsgEvent>>();
-		
-		resourceScheduleQueue = new ConcurrentLinkedQueue<MsgEvent>();
 		/*
 		gdb.addNode("regionName", null,null);
 		gdb.addNode("regionName", "agentName",null);
@@ -53,6 +46,14 @@ public class ControllerEngine {
         	
 			//Make sure config file
         	config = new Config(configFile);
+    		
+        	commandExec = new CommandExec(); //create command channel
+    		
+    		gdb = new GraphDBEngine(); //create graphdb connector
+    		
+    		regionalMsgMap = new ConcurrentHashMap<String,ConcurrentLinkedQueue<MsgEvent>>();
+    		
+    		resourceScheduleQueue = new ConcurrentLinkedQueue<MsgEvent>();
     		
 			
 			/*
