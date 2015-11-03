@@ -24,6 +24,8 @@ import com.tinkerpop.blueprints.impls.orient.OrientGraph;
 import com.tinkerpop.blueprints.impls.orient.OrientGraphFactory;
 import com.tinkerpop.blueprints.impls.orient.OrientGraphNoTx;
 
+import core.ControllerEngine;
+
 public class GraphDBEngine {
 	
 	public OrientGraphFactory factory;
@@ -55,12 +57,12 @@ public class GraphDBEngine {
 		//String connection_string = "remote:" + Launcher.conf.getGraphDBServer() + "/" + Launcher.conf.getGraphDBName();
 		//String username = Launcher.conf.getGraphDBLogin();
 		//String password = Launcher.conf.getGraphDBPassword();
-		String connection_string = "remote:" + "127.0.0.1" + "/" + "cresco";
-		String username = "root";
-		String password = "cody01";
-		System.out.println(connection_string);
-		System.out.println(username);
-		System.out.println(password);
+		String host = ControllerEngine.config.getParam("gdb_host");
+		String username = ControllerEngine.config.getParam("gdb_username");
+		String password = ControllerEngine.config.getParam("gdb_password");
+		String dbname = ControllerEngine.config.getParam("gdb_dbname");
+		
+		String connection_string = "remote:" + host + "/" + dbname;
 		
         factory = new OrientGraphFactory(connection_string,username,password).setupPool(10, 100);
         
