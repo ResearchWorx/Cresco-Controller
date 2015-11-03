@@ -62,6 +62,15 @@ public class CommandExec {
 							System.out.println("Controller : CommandExec : EnableController Error.. Bad Params");
 						}
 					}
+					else if(ce.getParam("controllercmd").equals("updateglobalcontroller"))
+					{
+							ce.setMsgBody("updating controller");
+							//Process p=Runtime.getRuntime().exec("cmd.exe /c ping 127.0.0.1 -n 10");
+							Process p=Runtime.getRuntime().exec("(sleep 10; service cresco-controller upgrade) &");
+							return ce;
+				    	}
+						
+					}
 					else if(ce.getParam("controllercmd").equals("addnode"))
 					{
 						//add node
@@ -777,5 +786,29 @@ public class CommandExec {
 		return pluginFiles;
 	}
 	
+	private String executeCommand(String command) {
+
+		StringBuffer output = new StringBuffer();
+
+		Process p;
+		try {
+			p = Runtime.getRuntime().exec(command);
+			p.waitFor();
+			BufferedReader reader = 
+                            new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+                        String line = "";			
+			while ((line = reader.readLine())!= null) {
+				output.append(line + "\n");
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return output.toString();
+
+	}
+
 	
 }
