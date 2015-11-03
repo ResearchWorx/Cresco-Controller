@@ -64,11 +64,21 @@ public class CommandExec {
 					}
 					else if(ce.getParam("controllercmd").equals("updateglobalcontroller"))
 					{
+						try
+						{
 							ce.setMsgBody("updating controller");
 							//Process p=Runtime.getRuntime().exec("cmd.exe /c ping 127.0.0.1 -n 10");
 							Process p=Runtime.getRuntime().exec("(sleep 10; service cresco-controller upgrade) &");
+							ce.setMsgBody("updating global controller");
+							
+						}
+						catch(Exception ex)
+						{
+							System.out.println("CommandExec : updateglobalcontroller Error : " + ex.toString());
+							ce.setMsgBody("failed to upgrade global controller");
+						}
 							return ce;
-				    	}
+				    	
 						
 					}
 					else if(ce.getParam("controllercmd").equals("addnode"))
