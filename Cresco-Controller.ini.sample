@@ -1,0 +1,4 @@
+[general]
+gdb_host=<GraphDB host>
+gdb_username=<username>
+gdb_password=<password>

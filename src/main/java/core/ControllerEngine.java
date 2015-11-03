@@ -8,13 +8,12 @@ import httpserv.httpServerEnginePerf;
 import scheduler.SchedulerEngine;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import broker.BrokerEngine;
 import shared.MsgEvent;
-import shared.MsgEventType;
 import core.PeerDiscovery.Peer;
 
 public class ControllerEngine {
@@ -25,6 +24,8 @@ public class ControllerEngine {
 	public static boolean SchedulerActive = false;
 	public static SchedulerEngine se;
 	public static ConcurrentLinkedQueue<MsgEvent> resourceScheduleQueue;
+	
+	public static Config config;
 	
 	public static void main(String[] args) throws Exception 
 	{
@@ -47,6 +48,13 @@ public class ControllerEngine {
 		
 		try
     	{
+			
+			String configFile = checkConfig(args);
+        	
+			//Make sure config file
+        	config = new Config(configFile);
+    		
+			
 			/*
     		System.out.println("Starting Broker");
     		BrokerEngine be = new BrokerEngine();
@@ -147,5 +155,35 @@ public class ControllerEngine {
 	  }
 	}
 	
+	public static String checkConfig(String[] args)
+	{
+		String errorMgs = "Cresco-Controller\n" +
+    			"Usage: java -jar Cresco-Controller.jar" +
+    			" -f <configuration_file>\n";
+    			
+    	if (args.length != 2)
+    	{
+    	  System.err.println(errorMgs);
+    	  System.err.println("ERROR: Invalid number of arguements.");
+      	  System.exit(1);
+    	}
+    	else if(!args[0].equals("-f"))
+    	{
+    	  System.err.println(errorMgs);
+    	  System.err.println("ERROR: Must specify configuration file.");
+      	  System.exit(1);
+    	}
+    	else
+    	{
+    		File f = new File(args[1]);
+    		if(!f.exists())
+    		{
+    			System.err.println("The specified configuration file: " + args[1] + " is invalid");
+    			System.exit(1);	
+    		}
+    	}
+    return args[1];	
+	}
+   
 	
 }
