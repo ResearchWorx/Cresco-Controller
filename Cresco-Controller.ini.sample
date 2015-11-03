@@ -3,3 +3,4 @@ gdb_host=<GraphDB host>
 gdb_username=<username>
 gdb_password=<password>
 gdb_dbname=<GraphDB DB Name>
+localpluginrepo=<path rel to controller jar>

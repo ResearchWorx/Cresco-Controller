@@ -739,7 +739,7 @@ public class CommandExec {
 			File jarLocation = new File(ControllerEngine.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
 			String parentDirName = jarLocation.getParent(); // to get the parent dir name
 		
-			File folder = new File(parentDirName + "/plugins");
+			File folder = new File(parentDirName + "/" + ControllerEngine.config.getParam("localpluginrepo"));
 			if(folder.exists())
 			{
 				pluginFiles = new ArrayList<String>();
