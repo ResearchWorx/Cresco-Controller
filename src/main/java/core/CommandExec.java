@@ -64,11 +64,15 @@ public class CommandExec {
 					}
 					else if(ce.getParam("controllercmd").equals("updateglobalcontroller"))
 					{
+						System.out.println("updateglobalcontroller underway");
 						try
 						{
 							ce.setMsgBody("updating controller");
 							//Process p=Runtime.getRuntime().exec("cmd.exe /c ping 127.0.0.1 -n 10");
-							Process p=Runtime.getRuntime().exec("(sleep 10; service cresco-controller upgrade) &");
+							String[] cmd = {"sh", "(sleep 10; service cresco-controller upgrade) &"};
+							Process p=Runtime.getRuntime().exec(cmd);
+							
+							//Process p=Runtime.getRuntime().exec("(sleep 10; service cresco-controller upgrade) &");
 							ce.setMsgBody("updating global controller");
 							
 						}
