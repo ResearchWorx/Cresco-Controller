@@ -2072,6 +2072,10 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
 					System.out.println("Controller : GraphDBEngine : Failed to updatePerf : edge_id not found!");
 				}
 			}
+			else
+			{
+				System.out.println("Can't update missing nodes : " + resource_node_id + "," + inode_node_id + "," + plugin_node_id);
+			}
 			
    	 	}
 		catch(Exception ex)
