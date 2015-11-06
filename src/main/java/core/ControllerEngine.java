@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import shared.MsgEvent;
 import core.PeerDiscovery.Peer;
+import futura.FuturaEngine;
 
 public class ControllerEngine {
 
@@ -22,7 +23,11 @@ public class ControllerEngine {
 	public static CommandExec commandExec;
 	public static GraphDBEngine gdb;
 	public static boolean SchedulerActive = false;
+	public static boolean FuturaActive = false;
+	
 	public static SchedulerEngine se;
+	public static FuturaEngine fe; 
+	
 	public static ConcurrentLinkedQueue<MsgEvent> resourceScheduleQueue;
 	
 	public static Config config;
@@ -55,11 +60,22 @@ public class ControllerEngine {
     		
     		resourceScheduleQueue = new ConcurrentLinkedQueue<MsgEvent>();
     		
-			
+    		System.out.println("Starting Futura");
+    		fe = new FuturaEngine();
+			Thread fe_thread = new Thread(se);
+	    	fe_thread.start();
+	    	
+	    	while(!ControllerEngine.FuturaActive)
+	    	{
+	    		System.out.println("Waiting on FuturaActive...");
+	    		Thread.sleep(1000);;
+	    	}
+	    	
 			/*
     		System.out.println("Starting Broker");
     		BrokerEngine be = new BrokerEngine();
     		*/
+	    	
 			System.out.println("Starting SR Scheduler");
 			se = new SchedulerEngine();
 			Thread se_thread = new Thread(se);
