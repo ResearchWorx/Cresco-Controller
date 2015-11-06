@@ -697,8 +697,6 @@ public class GraphDBEngine {
 		try
 		{
 			edge_id = getIsAssignedEdgeId(resource_id,inode_id,region,agent);
-			System.out.println("edge_id = " + edge_id);
-			System.out.println(resource_id + "," + inode_id + "," + region + "," + "," + agent + "," + plugin);
 			if(edge_id != null)
 			{
 				//System.out.println("Node already Exist: region=" + region + " agent=" + agent + " plugin=" + plugin);
@@ -734,7 +732,7 @@ public class GraphDBEngine {
 						{
 							System.out.println("IaddIsAttachedEdge: iNode does not exist : " + inode_id);
 						}
-						if(inode_node_id != null)
+						if(pnode_node_id != null)
 						{
 							System.out.println("IaddIsAttachedEdge: pNode does not exist : " + region + agent + plugin);
 						}
@@ -742,7 +740,7 @@ public class GraphDBEngine {
 				}
 				else
 				{
-					System.out.println("IaddIsAttachedEdge: required input is null : " + resource_id + "," + inode_id + "," + region + "," + "," + agent + "," + plugin);
+					System.out.println("IaddIsAttachedEdge: required input is null : " + resource_id + "," + inode_id + "," + region + "," + agent + "," + plugin);
 					
 				}
 				
