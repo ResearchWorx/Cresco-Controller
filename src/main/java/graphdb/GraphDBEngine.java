@@ -746,10 +746,12 @@ public class GraphDBEngine {
 		catch(com.orientechnologies.orient.core.storage.ORecordDuplicatedException exc)
 		{
 			//eat exception.. this is not normal and should log somewhere
+			System.out.println("IaddIsAttachedEdge: ORecordDuplicatedException : " + exc.toString());
 		}
 		catch(com.orientechnologies.orient.core.exception.OConcurrentModificationException exc)
 		{
 			//eat exception.. this is normal
+			System.out.println("IaddIsAttachedEdge: OConcurrentModificationException : " + exc.toString());
 		}
 		catch(Exception ex)
 		{
