@@ -69,7 +69,7 @@ public class ControllerEngine {
     		
     		System.out.println("Starting Futura");
     		fe = new FuturaEngine();
-			Thread fe_thread = new Thread(se);
+			Thread fe_thread = new Thread(fe);
 	    	fe_thread.start();
 	    	
 	    	while(!ControllerEngine.FuturaActive)

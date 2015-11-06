@@ -25,12 +25,13 @@ public class FuturaEngine implements Runnable {
 	{
 		try
 		{
+			System.out.println("Creating Futura resource node.");
 			if(ControllerEngine.gdb.getResourceNodeId(resource_id) == null)
 			{
 				//create resource
 				ControllerEngine.gdb.addResourceNode(resource_id);
 			}
-			
+			System.out.println("Creating Futura iNode.");
 			if(ControllerEngine.gdb.getINodeId(resource_id, inode_id) == null)
 			{
 				//create inode
