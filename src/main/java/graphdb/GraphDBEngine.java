@@ -2074,6 +2074,7 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
 			}
 			else
 			{
+				System.out.println("Can't update missing nodes : " + resource_id + "," + inode_id + "," + plugin);
 				System.out.println("Can't update missing nodes : " + resource_node_id + "," + inode_node_id + "," + plugin_node_id);
 			}
 			
