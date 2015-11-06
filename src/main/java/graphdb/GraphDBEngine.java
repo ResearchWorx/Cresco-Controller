@@ -67,6 +67,7 @@ public class GraphDBEngine {
         factory = new OrientGraphFactory(connection_string,username,password).setupPool(10, 100);
         
         initCrescoDB();
+        ControllerEngine.GDBActive = true;
 	}
 	
 	//new database functions
@@ -1813,16 +1814,17 @@ public class GraphDBEngine {
 	boolean createVertexIndex(String className, String indexName, boolean isUnique) 
 	{
 		boolean wasCreated = false;
-		OrientGraphNoTx txGraph = factory.getNoTx();
-        //OSchema schema = ((OrientGraph)odb).getRawGraph().getMetadata().getSchema();
-        OSchema schema = ((OrientGraphNoTx)txGraph).getRawGraph().getMetadata().getSchema();
+		try
+		{
+			OrientGraphNoTx txGraph = factory.getNoTx();
+			//OSchema schema = ((OrientGraph)odb).getRawGraph().getMetadata().getSchema();
+			OSchema schema = ((OrientGraphNoTx)txGraph).getRawGraph().getMetadata().getSchema();
         
-        if (schema.existsClass(className)) 
-        {
-        	OClass vt = txGraph.getVertexType(className);
-        	//OClass vt = txGraph.createVertexType(className);
-        		
-        			vt.createProperty(indexName, OType.STRING);
+			if (schema.existsClass(className)) 
+			{
+				OClass vt = txGraph.getVertexType(className);
+				//OClass vt = txGraph.createVertexType(className);
+        		vt.createProperty(indexName, OType.STRING);
         		
         		if(isUnique)
         		{
@@ -1833,10 +1835,16 @@ public class GraphDBEngine {
         			vt.createIndex(className + "." + indexName, OClass.INDEX_TYPE.NOTUNIQUE, indexName);
         		}
         	
-        	wasCreated = true;
-        }
-        txGraph.commit();
-        txGraph.shutdown();
+        		wasCreated = true;
+			}
+			txGraph.commit();
+			txGraph.shutdown();
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : createVertexIndex : Error " + ex.toString());
+		}
+		
         return wasCreated;
     }
 	

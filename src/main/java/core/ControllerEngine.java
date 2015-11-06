@@ -24,6 +24,8 @@ public class ControllerEngine {
 	public static GraphDBEngine gdb;
 	public static boolean SchedulerActive = false;
 	public static boolean FuturaActive = false;
+	public static boolean GDBActive = false;
+	
 	
 	public static SchedulerEngine se;
 	public static FuturaEngine fe; 
@@ -55,6 +57,11 @@ public class ControllerEngine {
         	commandExec = new CommandExec(); //create command channel
     		
     		gdb = new GraphDBEngine(); //create graphdb connector
+    		while(!ControllerEngine.GDBActive)
+	    	{
+	    		System.out.println("Waiting on DGBActive...");
+	    		Thread.sleep(1000);;
+	    	}
     		
     		regionalMsgMap = new ConcurrentHashMap<String,ConcurrentLinkedQueue<MsgEvent>>();
     		
