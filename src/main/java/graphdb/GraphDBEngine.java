@@ -773,7 +773,6 @@ public class GraphDBEngine {
 		
 	}
 	
-	
 	public String addINode(String resource_id, String inode_id)
 	{
 		String node_id = null;
@@ -1817,7 +1816,8 @@ public class GraphDBEngine {
 			System.out.println("initCrescoDB Error: " + ex.toString());
 		}
 	}
-	boolean createVertexIndex(String className, String indexName, boolean isUnique) 
+	
+boolean createVertexIndex(String className, String indexName, boolean isUnique) 
 	{
 		boolean wasCreated = false;
 		try
@@ -2042,27 +2042,35 @@ public class GraphDBEngine {
 		String edge_id = null;
 		try
    	 	{ 
-			//check if edge is found, if not create it
-			edge_id = getIsAssignedEdgeId(resource_id, inode_id, region, agent);
-			if(edge_id == null)
+			//make sure nodes exist
+			String resource_node_id = getResourceNodeId(resource_id);
+			String inode_node_id = getINodeId(resource_id,inode_id);
+			String plugin_node_id = getNodeId(region,agent,plugin);
+			
+			if((resource_node_id != null) && (inode_node_id != null) && (plugin_node_id != null))
 			{
-				edge_id = addIsAttachedEdge(resource_id, inode_id, region, agent, plugin);
-			}
-			//check again if edge is found
-			if(edge_id != null)
-			{
-				if(updateEdge(edge_id, params))
+				//check if edge is found, if not create it
+				edge_id = getIsAssignedEdgeId(resource_id, inode_id, region, agent);
+				if(edge_id == null)
 				{
-					isUpdated = true;
+					edge_id = addIsAttachedEdge(resource_id, inode_id, region, agent, plugin);
+				}
+				//check again if edge is found
+				if(edge_id != null)
+				{
+					if(updateEdge(edge_id, params))
+					{
+						isUpdated = true;
+					}
+					else
+					{
+						System.out.println("Controller : GraphDBEngine : Failed to updatePerf : Failed to update Edge params!");
+					}
 				}
 				else
 				{
-					System.out.println("Controller : GraphDBEngine : Failed to updatePerf : Failed to update Edge params!");
+					System.out.println("Controller : GraphDBEngine : Failed to updatePerf : edge_id not found!");
 				}
-			}
-			else
-			{
-				System.out.println("Controller : GraphDBEngine : Failed to updatePerf : edge_id not found!");
 			}
 			
    	 	}
