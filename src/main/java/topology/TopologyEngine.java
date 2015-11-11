@@ -63,6 +63,11 @@ public class TopologyEngine implements Runnable {
 					for(String edge_id : edge_list)
 					{
 						System.out.println(edge_id);
+						String discoveredagents = ControllerEngine.gdb.getIsAssignedParam(edge_id,"discoveredagents");
+						if(discoveredagents != null)
+						{
+							System.out.println(discoveredagents);
+						}
 					}
 					Thread.sleep(10000);
 				}
