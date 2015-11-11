@@ -394,7 +394,7 @@ public class GraphDBEngine {
 				graph.shutdown();
 			}
 		}
-		return edge_id;
+		return edge_list;
 	}
 	
 	
