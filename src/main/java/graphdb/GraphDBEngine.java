@@ -1809,6 +1809,28 @@ public class GraphDBEngine {
 		    String[] isAssignedProps = {"resource_id","inode_id","region", "agent"}; //Property names
 		    createEdgeClass("isAssigned",isAssignedProps);
 		   
+		    
+		    //create plugin anchor resource and inodes
+		    String[]  pluginAnchors= {"sysinfo","netdiscovery"}; //Property names
+		    for(String pAnchor : pluginAnchors)
+		    {
+		    	String resource_id = pAnchor + "_resource";
+				String inode_id = pAnchor + "_inode";
+				
+		    	System.out.println("Creating " + pAnchor + " resource node.");
+				if(ControllerEngine.gdb.getResourceNodeId(resource_id) == null)
+				{
+					//create resource
+					ControllerEngine.gdb.addResourceNode(resource_id);
+				}
+				System.out.println("Creating " + pAnchor + " iNode.");
+				if(ControllerEngine.gdb.getINodeId(resource_id, inode_id) == null)
+				{
+					//create inode
+					ControllerEngine.gdb.addINode(resource_id, inode_id);
+				}
+		    }
+		    
 			
 		}
 		catch(Exception ex)

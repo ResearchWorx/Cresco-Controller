@@ -18,11 +18,12 @@ import shared.MsgEventType;
 
 public class FuturaEngine implements Runnable {
 
-	private String resource_id = "futura_resource";
-	private String inode_id = "futura_inode";
+	private String resource_id = "sysinfo_resource";
+	private String inode_id = "sysinfo_inode";
 	
 	public FuturaEngine()
 	{
+		/*
 		try
 		{
 			System.out.println("Creating Futura resource node.");
@@ -43,6 +44,7 @@ public class FuturaEngine implements Runnable {
 		{
 			System.out.println("FuturaEngine Init Error: " + ex.toString());
 		}
+		*/
 	}
 		
 	public void run() 
