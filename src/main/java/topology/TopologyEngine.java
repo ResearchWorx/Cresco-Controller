@@ -66,7 +66,13 @@ public class TopologyEngine implements Runnable {
 						String discoveredagents = ControllerEngine.gdb.getIsAssignedParam(edge_id,"discoveredagents");
 						if(discoveredagents != null)
 						{
-							System.out.println(discoveredagents);
+							//System.out.println(discoveredagents);
+							String[] agentList = discoveredagents.split(",");
+							for(String regionAgent : agentList)
+							{
+								String[] splitRegionAgent = regionAgent.split("_");
+								System.out.println("region:" + splitRegionAgent[0] + " agent:" + splitRegionAgent[1]);
+							}
 						}
 					}
 					Thread.sleep(10000);
