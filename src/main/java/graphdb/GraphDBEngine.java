@@ -351,6 +351,53 @@ public class GraphDBEngine {
 		return edge_id;
 	}
 	
+	public List<String> getIsAssignedEdgeIds(String resource_id, String inode_id)
+	{
+		String edge_id = null;
+		OrientGraph graph = null;
+		List<String> edge_list = null;
+		try
+		{
+			if((resource_id != null) && (inode_id != null))
+			{
+				edge_list = new ArrayList<String>();
+				//OrientGraph graph = factory.getTx();
+				//OrientGraphNoTx graph = factory.getNoTx();
+				graph = factory.getTx();
+				Iterable<Vertex> resultIterator = graph.command(new OCommandSQL("SELECT rid FROM INDEX:isAssigned.edgeProp WHERE key = [\""+ resource_id + "\",\""+ inode_id +"\"]")).execute();
+			    Iterator<Vertex> iter = resultIterator.iterator();
+			    while(iter.hasNext())
+				{
+					Vertex v = iter.next();
+					edge_id = v.getProperty("rid").toString();
+					if(edge_id != null)
+					{
+						edge_id = edge_id.substring(edge_id.indexOf("[") + 1, edge_id.indexOf("]"));
+						edge_list.add(edge_id);
+					}
+					
+				}
+				//graph.shutdown();
+				//return node_id.substring(node_id.indexOf("[") + 1, node_id.indexOf("]"));
+			    //node_id = node_id.substring(node_id.indexOf("[") + 1, node_id.indexOf("]"));
+			}
+			
+		}
+		catch(Exception ex)
+		{
+			System.out.println("GraphDBEngine : getIsAssignedEdgeId : Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return edge_id;
+	}
+	
+	
 	public String getIsAssignedParam(String edge_id,String param_name)
 	{
 		String param = null;
@@ -1804,6 +1851,10 @@ public class GraphDBEngine {
 		    System.out.println("Create isResource Edge Class");
 		    String[] isResourceProps = {"edge_id"}; //Property names
 		    createEdgeClass("isResource",isResourceProps);
+		    
+		    System.out.println("Create isReachable Edge Class");
+		    String[] isReachableProps = {"edge_id"}; //Property names
+		    createEdgeClass("isReachable",isReachableProps);
 		    
 		    System.out.println("Create isAssigned Edge Class");
 		    String[] isAssignedProps = {"resource_id","inode_id","region", "agent"}; //Property names

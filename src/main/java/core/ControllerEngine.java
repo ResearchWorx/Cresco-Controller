@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import shared.MsgEvent;
+import topology.TopologyEngine;
 import core.PeerDiscovery.Peer;
 import futura.FuturaEngine;
 
@@ -24,11 +25,13 @@ public class ControllerEngine {
 	public static GraphDBEngine gdb;
 	public static boolean SchedulerActive = false;
 	public static boolean FuturaActive = false;
+	public static boolean TopologyActive = false;
 	public static boolean GDBActive = false;
 	
 	
 	public static SchedulerEngine se;
-	public static FuturaEngine fe; 
+	public static FuturaEngine fe;
+	public static TopologyEngine te;
 	
 	public static ConcurrentLinkedQueue<MsgEvent> resourceScheduleQueue;
 	
@@ -75,6 +78,17 @@ public class ControllerEngine {
 	    	while(!ControllerEngine.FuturaActive)
 	    	{
 	    		System.out.println("Waiting on FuturaActive...");
+	    		Thread.sleep(1000);;
+	    	}
+	    	
+	    	System.out.println("Starting TopologyEngine");
+    		te = new TopologyEngine();
+			Thread te_thread = new Thread(te);
+	    	te_thread.start();
+	    	
+	    	while(!ControllerEngine.TopologyActive)
+	    	{
+	    		System.out.println("Waiting on TopologyActive...");
 	    		Thread.sleep(1000);;
 	    	}
 	    	
