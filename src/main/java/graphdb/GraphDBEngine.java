@@ -1818,16 +1818,16 @@ public class GraphDBEngine {
 				String inode_id = pAnchor + "_inode";
 				
 		    	System.out.println("Creating " + pAnchor + " resource node.");
-				if(ControllerEngine.gdb.getResourceNodeId(resource_id) == null)
+				if(getResourceNodeId(resource_id) == null)
 				{
 					//create resource
-					ControllerEngine.gdb.addResourceNode(resource_id);
+					addResourceNode(resource_id);
 				}
 				System.out.println("Creating " + pAnchor + " iNode.");
-				if(ControllerEngine.gdb.getINodeId(resource_id, inode_id) == null)
+				if(getINodeId(resource_id, inode_id) == null)
 				{
 					//create inode
-					ControllerEngine.gdb.addINode(resource_id, inode_id);
+					addINode(resource_id, inode_id);
 				}
 		    }
 		    
