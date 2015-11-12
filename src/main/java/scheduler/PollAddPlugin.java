@@ -24,7 +24,7 @@ public class PollAddPlugin implements Runnable {
 	        	String edge_id = null;
 	        	while((edge_id == null) && (count < 30))
 	        	{
-	        		edge_id = ControllerEngine.gdb.getIsAssignedEdgeId(resource_id, inode_id, region, agent);
+	        		edge_id = ControllerEngine.gdb.getResourceEdgeId(resource_id, inode_id, region, agent);
 	        		Thread.sleep(1000);
 	        	}
 	        	if(edge_id != null)

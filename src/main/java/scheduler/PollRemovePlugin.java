@@ -21,7 +21,7 @@ public class PollRemovePlugin implements Runnable {
 	public void run() {
         try 
         {
-        	String edge_id = ControllerEngine.gdb.getIsAssignedEdgeId(resource_id, inode_id);
+        	String edge_id = ControllerEngine.gdb.getResourceEdgeId(resource_id, inode_id);
     		if(edge_id != null)
     		{
     			String pnode_node_id = ControllerEngine.gdb.getIsAssignedParam(edge_id, "out");
