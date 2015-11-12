@@ -73,8 +73,19 @@ public class TopologyEngine implements Runnable {
 								String ipPath = ControllerEngine.gdb.getIsAssignedParam(edge_id,regionAgent);
 								if(ipPath != null)
 								{
-								String[] splitRegionAgent = regionAgent.split("_");
-								System.out.println("region:" + splitRegionAgent[0] + " agent:" + splitRegionAgent[1] + " path:" + ipPath);
+									String[] splitRegionAgent = regionAgent.split("_");
+									String dst_region = splitRegionAgent[0];
+									String dst_agent = splitRegionAgent[1];
+									String src_region = ControllerEngine.gdb.getIsAssignedParam(edge_id,"region");
+									String src_agent = ControllerEngine.gdb.getIsAssignedParam(edge_id,"agent");
+									String isReachable_edge_id = ControllerEngine.gdb.addEdge(src_region, src_agent, null, dst_region, dst_agent, null, "isReachable");
+									String[] ipsrcdst = ipPath.split("_");
+									Map<String,String> params = new HashMap<String,String>();
+									params.put("src_ip", ipsrcdst[0]);
+									params.put("dst_ip", ipsrcdst[1]);
+									
+									ControllerEngine.gdb.updateEdge(isReachable_edge_id, params);
+								
 								}
 							}
 						}

@@ -265,7 +265,7 @@ public class GraphDBEngine {
 		return node_id;
 	}
 	
-	public String getIsAssignedEdgeId(String resource_id, String inode_id, String region, String agent)
+	public String getResourceEdgeId(String resource_id, String inode_id, String region, String agent)
 	{
 		String edge_id = null;
 		OrientGraph graph = null;
@@ -308,7 +308,7 @@ public class GraphDBEngine {
 		return edge_id;
 	}
 	
-	public String getIsAssignedEdgeId(String resource_id, String inode_id)
+	public String getResourceEdgeId(String resource_id, String inode_id)
 	{
 		String edge_id = null;
 		OrientGraph graph = null;
@@ -396,7 +396,6 @@ public class GraphDBEngine {
 		}
 		return edge_list;
 	}
-	
 	
 	public String getIsAssignedParam(String edge_id,String param_name)
 	{
@@ -743,7 +742,7 @@ public class GraphDBEngine {
 		OrientGraph graph = null;
 		try
 		{
-			edge_id = getIsAssignedEdgeId(resource_id,inode_id,region,agent);
+			edge_id = getResourceEdgeId(resource_id,inode_id,region,agent);
 			if(edge_id != null)
 			{
 				//System.out.println("Node already Exist: region=" + region + " agent=" + agent + " plugin=" + plugin);
@@ -2030,7 +2029,7 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
 		
 	}
 	
-	private boolean updateEdge(String edge_id, Map<String,String> params)
+	public boolean updateEdge(String edge_id, Map<String,String> params)
 	{
 		boolean isUpdated = false;
 		int count = 0;
@@ -2123,7 +2122,7 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
 			if((resource_node_id != null) && (inode_node_id != null) && (plugin_node_id != null))
 			{
 				//check if edge is found, if not create it
-				edge_id = getIsAssignedEdgeId(resource_id, inode_id, region, agent);
+				edge_id = getResourceEdgeId(resource_id, inode_id, region, agent);
 				if(edge_id == null)
 				{
 					edge_id = addIsAttachedEdge(resource_id, inode_id, region, agent, plugin);
