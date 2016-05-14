@@ -649,8 +649,43 @@ public class CommandExec {
 				ControllerEngine.gdb.updatePerf(region, agent, plugin, resource_id, inode_id, params);
 				
 				ce.setMsgBody("updatedperf");
-				return ce;
+                ce.setParam("source","watchdog");
+
+                return ce;
 			}
+            else if(ce.getMsgType() == MsgEventType.KPI)
+            {
+                String region = null;
+                String agent = null;
+                String plugin = null;
+                String resource_id = null;
+                String inode_id = null;
+
+                region = ce.getParam("src_region");
+                agent = ce.getParam("src_agent");
+                plugin = ce.getParam("src_plugin");
+                resource_id = ce.getParam("resource_id");
+                inode_id = ce.getParam("inode_id");
+
+                //clean params for edge
+				/*
+				ce.removeParam("loop");
+				ce.removeParam("isGlobal");
+				ce.removeParam("src_agent");
+				ce.removeParam("src_region");
+				ce.removeParam("src_plugin");
+				ce.removeParam("dst_agent");
+				ce.removeParam("dst_region");
+				ce.removeParam("dst_plugin");
+				*/
+                Map<String,String> params = ce.getParams();
+
+                ControllerEngine.gdb.updatePerf(region, agent, plugin, resource_id, inode_id, params);
+
+                ce.setMsgBody("updatedperf");
+                ce.setParam("source","watchdog");
+                return ce;
+            }
 		return null;
 	}
 	
