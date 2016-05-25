@@ -2107,6 +2107,53 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
 		return isUpdated;
 		
 	}
+
+	private boolean updateEdgeNoTx(String edge_id, Map<String,String> params)
+	{
+		boolean isUpdated = false;
+		OrientGraphNoTx graph = null;
+		try
+		{
+			graph = factory.getNoTx();
+			Edge edge = graph.getEdge(edge_id);
+			if(edge != null)
+			{
+				for (Map.Entry<String, String> entry : params.entrySet())
+				{
+					edge.setProperty(entry.getKey(), entry.getValue());
+				}
+				graph.commit();
+				isUpdated = true;
+			}
+			else
+			{
+				System.out.println("IupdateEdge: no edge found for edge_id=" + edge_id);
+			}
+
+		}
+		catch(com.orientechnologies.orient.core.storage.ORecordDuplicatedException exc)
+		{
+			//eat exception.. this is not normal and should log somewhere
+		}
+		catch(com.orientechnologies.orient.core.exception.OConcurrentModificationException exc)
+		{
+			//eat exception.. this is normal
+		}
+		catch(Exception ex)
+		{
+			long threadId = Thread.currentThread().getId();
+			System.out.println("IupdateEdge: thread_id: " + threadId + " Error " + ex.toString());
+		}
+		finally
+		{
+			if(graph != null)
+			{
+				graph.shutdown();
+			}
+		}
+		return isUpdated;
+
+	}
 	
 	public boolean updatePerf(String region, String agent, String plugin, String resource_id, String inode_id, Map<String,String> params)
 	{
@@ -2130,8 +2177,9 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
 				//check again if edge is found
 				if(edge_id != null)
 				{
-					if(updateEdge(edge_id, params))
-					{
+					//if(updateEdge(edge_id, params))
+                    if(updateEdgeNoTx(edge_id, params))
+                    {
 						isUpdated = true;
 					}
 					else
