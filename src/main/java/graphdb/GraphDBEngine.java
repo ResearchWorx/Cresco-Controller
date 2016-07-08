@@ -1001,6 +1001,8 @@ public class GraphDBEngine {
 		catch(com.orientechnologies.orient.core.storage.ORecordDuplicatedException exc)
 		{
 			//eat exception.. this is not normal and should log somewhere
+            System.out.println("Duplicated Error ");
+            exc.printStackTrace();
 		}
 		catch(com.orientechnologies.orient.core.exception.OConcurrentModificationException exc)
 		{
