@@ -347,7 +347,7 @@ public class GraphDBEngine {
 		}
 		catch(Exception ex)
 		{
-			System.out.println("GraphDBEngine : getIsAssignedEdgeId : Error " + ex.toString());
+			System.out.println("GraphDBEngine : getResourceEdgeId : Error " + ex.toString());
 		}
 		finally
 		{
