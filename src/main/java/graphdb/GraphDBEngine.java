@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import com.orientechnologies.orient.client.remote.OServerAdmin;
 import com.orientechnologies.orient.core.metadata.schema.OClass;
 import com.orientechnologies.orient.core.metadata.schema.OSchema;
 import com.orientechnologies.orient.core.metadata.schema.OType;
@@ -63,13 +64,63 @@ public class GraphDBEngine {
 		String dbname = ControllerEngine.config.getParam("gdb_dbname");
 		
 		String connection_string = "remote:" + host + "/" + dbname;
-		
+
+		/*
+		if(!dropDBIfExists(connection_string, username, password)) {
+			System.out.println("DBCheck drop failed");
+			System.exit(0);
+		}
+		*/
+
+		if(!dbCheck(connection_string, username, password))
+		{
+			System.out.println("DBCheck failed");
+			System.exit(0);
+		}
+
         factory = new OrientGraphFactory(connection_string,username,password).setupPool(10, 100);
         
         initCrescoDB();
         ControllerEngine.GDBActive = true;
 	}
-	
+
+	public boolean dbCheck(String connection_string, String username, String password) {
+
+		Boolean isValid = false;
+		try {
+			OServerAdmin server = new OServerAdmin(connection_string).connect(username, password);
+			if (!server.existsDatabase("plocal")) {
+				server.createDatabase("graph", "plocal");
+				isValid = true;
+			}
+			else {
+				isValid = true;
+			}
+			server.close();
+		}
+		catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return isValid;
+	}
+
+	public boolean dropDBIfExists(String connection_string, String username, String password) {
+		Boolean isValid = false;
+		try {
+			OServerAdmin server = new OServerAdmin(connection_string).connect(username, password);
+			if (server.existsDatabase("plocal")) {
+				server.dropDatabase("plocal");
+				isValid = true;
+			}
+			server.close();
+		}
+		catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		return isValid;
+	}
+
+
 	//new database functions
 	//READS
 	public String getINodeId(String resource_id, String inode_id)
@@ -1990,8 +2041,8 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
         	OClass et = txGraph.createEdgeType(className);
         	for(String prop : props)
       		  et.createProperty(prop, OType.STRING);
-        	
-        	et.createIndex(className + ".edgeProp", OClass.INDEX_TYPE.UNIQUE, props);
+        	//This was causing an index exception.. will need to add it back if edges duplicate
+        	//et.createIndex(className + ".edgeProp", OClass.INDEX_TYPE.UNIQUE, props);
         	wasCreated = true;
         }
         txGraph.commit();
