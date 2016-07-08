@@ -65,12 +65,12 @@ public class GraphDBEngine {
 		
 		String connection_string = "remote:" + host + "/" + dbname;
 
-		/*
+
 		if(!dropDBIfExists(connection_string, username, password)) {
 			System.out.println("DBCheck drop failed");
 			System.exit(0);
 		}
-		*/
+
 
 		if(!dbCheck(connection_string, username, password))
 		{
