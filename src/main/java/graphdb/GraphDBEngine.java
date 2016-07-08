@@ -2042,7 +2042,7 @@ boolean createVertexIndex(String className, String indexName, boolean isUnique)
         	for(String prop : props)
       		  et.createProperty(prop, OType.STRING);
         	//This was causing an index exception.. will need to add it back if edges duplicate
-        	//et.createIndex(className + ".edgeProp", OClass.INDEX_TYPE.UNIQUE, props);
+        	et.createIndex(className + ".edgeProp", OClass.INDEX_TYPE.UNIQUE, props);
         	wasCreated = true;
         }
         txGraph.commit();
