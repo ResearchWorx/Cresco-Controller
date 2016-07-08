@@ -2225,6 +2225,12 @@ public class GraphDBEngine {
             String inode_node_id = getINodeId(resource_id,inode_id);
             String plugin_node_id = getNodeId(region,agent,plugin);
 
+            //create node if not seen.. this needs to be changed.
+            if(plugin_node_id == null) {
+                plugin_node_id = addNode(region,agent,plugin);
+                System.out.println("Added Node" + region + " " + agent + " " + plugin + " = " + plugin_node_id);
+            }
+
             if((resource_node_id != null) && (inode_node_id != null) && (plugin_node_id != null))
             {
                 //check if edge is found, if not create it
